@@ -8,9 +8,10 @@
 import optparse, os, re, shutil, subprocess, sys, tempfile, time
 
 # user params
-avs2yuv_path='C:/encoding/avs2yuv.exe'
-x264_path='C:/encoding/x264/x264-10bit.exe'
-ffms2_10bit_path='C:/encoding/oldplugins/ffms2-10bit.dll'
+avs2yuv_path = 'C:/encoding/avs2yuv.exe'
+x264_path = 'C:/encoding/x264/x264-10bit.exe'
+ffms2_10bit_path = 'C:/encoding/oldplugins/ffms2-10bit.dll'
+ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 
 x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
 
@@ -30,7 +31,7 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_numb
 def generate_joined_avs(output_avs, lossless, avs_mem, total_threads):
     joined_avs = open(_OutputAviSynthScript, 'w')
     joined_avs.write('LoadPlugin("{0}")\n'.format(os.path.normpath(ffms2_10bit_path)))
-    joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem)
+    joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
     for thread in range(1, total_threads + 1):
         write_source_line(joined_avs, lossless, thread)
         if (thread == 1):
@@ -48,16 +49,16 @@ def write_source_line(avs, lossless, num):
 
 
 #count_frames counts number of frames in AviSynth Script
-def count_frames(AviSynthScript, proc):
+def count_frames(script_in, proc):
     frame = [0, 0, 0, 0]
     a,tempYUV=tempfile.mkstemp()
     os.close(a)
     frames_cmd = '"{0}" -raw -frames 1 "[input]" -o "{1}"'.format(os.path.normpath(avs2yuv_path), tempYUV)
     if(options.usewine):
-        frames_cmd = 'wine ' + frames_cmd.replace('[input]', 'Z:' + AviSynthScript.replace('/','\\'))
+        frames_cmd = 'wine ' + frames_cmd.replace('[input]', 'Z:' + script_in.replace('/','\\'))
         proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     else:
-        frames_cmd = '"' + frames_cmd.replace('[input]', AviSynthScript) + '"'
+        frames_cmd = frames_cmd.replace('[input]', script_in)
         proc = subprocess.Popen('"' + frames_cmd + '"',shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
     p = re.compile ('.+: ([0-9]+)x([0-9]+), ([0-9]+/[0-9]+) fps, ([0-9]+) frames')
@@ -89,7 +90,7 @@ if (options.threads < 2):
     raise SystemExit
 
 total_threads = options.threads
-_AviSynthMemoryPerThread = options.AVS_Mem_Per_Thread
+avs_mem = options.AVS_Mem_Per_Thread
 
 for file in args:
     (_path, _ext) = os.path.splitext(file)
@@ -124,9 +125,9 @@ for file in args:
     for thread in range(1,total_threads + 1):
         _NewThreadScript = _ThreadScript.replace('[NUM]', str(thread))
         if(options.usewine):
-            generate_parallel_avs(_NewThreadScript,'Z:' + _InputAviSynthScript.replace('/','\\'),_AviSynthMemoryPerThread,total_threads,_CurrentThread)
+            generate_parallel_avs(_NewThreadScript,'Z:' + _InputAviSynthScript.replace('/','\\'),avs_mem,total_threads,_CurrentThread)
         else:
-            generate_parallel_avs(_NewThreadScript,_InputAviSynthScript,_AviSynthMemoryPerThread,total_threads,_CurrentThread)
+            generate_parallel_avs(_NewThreadScript, _InputAviSynthScript, avs_mem, total_threads, thread)
         if(options.useavs2yuv):
             print('Counting frames in script {0}'.format(thread))
             (_ThreadScriptFrame[thread-1],proc[thread-1]) = count_frames(_NewThreadScript, proc[thread-1])
@@ -169,6 +170,6 @@ for file in args:
     # create joined lossless script
     print('Generating joined script.')
     if(options.usewine):
-        generate_joined_avs(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),_AviSynthMemoryPerThread,total_threads)
+        generate_joined_avs(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),avs_mem,total_threads)
     else:
-        generate_joined_avs(_OutputAviSynthScript,_ThreadedLosslessFile,_AviSynthMemoryPerThread,total_threads)
+        generate_joined_avs(_OutputAviSynthScript,_ThreadedLosslessFile,avs_mem,total_threads)
