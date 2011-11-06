@@ -75,7 +75,7 @@ def count_frames(script_in, proc):
     os.unlink(tempYUV)
     return (frame,proc)
 
-parser = optparse.OptionParser()
+parser = optparse.OptionParser(usage="usage: %prog [options] input.avs")
 parser.add_option('-t', '--threads', type='int', dest='threads', default=4, help="Number of parallel encodes to spawn")
 parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512, help="Value for SetMemoryMax() in threads")
 parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False, help="Encoding on linux, so use wine")
@@ -92,12 +92,17 @@ if (options.threads < 2):
 total_threads = options.threads
 avs_mem = options.AVS_Mem_Per_Thread
 
+if len(args) < 1:
+    print('No input file given. Use -h or --help for usage.')
+    raise SystemExit
+
 for file in args:
     (_path, _ext) = os.path.splitext(file)
     # initial test
     if(os.path.exists(file)==False or os.path.isfile(file)==False or _ext.lower().find('.avs')==-1):
         print('No input AviSynth Script specified.')
         print('Script quitting.')
+        raise SystemExit
 
     # script vars
     _InputAviSynthScript = os.path.abspath(file)
