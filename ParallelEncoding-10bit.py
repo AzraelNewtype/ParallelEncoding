@@ -79,10 +79,10 @@ def CountAviSynthFrames(AviSynthScript, proc):
     return (frame,proc)
 
 parser = optparse.OptionParser()
-parser.add_option('-t', '--threads', type = 'int', dest = 'Threads', default = 4, help = "Number of parallel encodes to spawn")
-parser.add_option('-m', '--max-memory', type = 'int', dest = 'AVS_Mem_Per_Thread', default=512, help = "Value for SetMemoryMax() in threads")
-parser.add_option('-w', '--wine', action = 'store_true', dest = 'usewine', default = False, help = "Encoding on linux, so use wine")
-parser.add_option('-a', '--avs2yuv', action = 'store_true', dest = 'useavs2yuv', default = True, help = "Use avs2yuv piping [default]")
+parser.add_option('-t', '--threads', type='int', dest='Threads', default=4, help="Number of parallel encodes to spawn")
+parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512, help="Value for SetMemoryMax() in threads")
+parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False, help="Encoding on linux, so use wine")
+parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True, help="Use avs2yuv piping [default]")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
