@@ -16,7 +16,6 @@ x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
 
 # generate_parallel_avs creates trimmed files for parallel encoding
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_number):
-    _ThreadMultiplier = _ThreadNumber-1
     parallel_avs = open(avs_out, 'w')
     parallel_avs.write('SetMemoryMax({0})\n'.format(avs_mem))
     parallel_avs.write('Import("{0}")\n'.format(main_avs))
