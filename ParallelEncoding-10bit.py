@@ -26,28 +26,26 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_numb
         parallel_avs.write('end = start + (FrameCount() / {0}) + 100\n'.format(total_threads))
     parallel_avs.write('Trim(start,end)\n')
 
-#JoinedAviSynthScript joins lossless files from parallel encoding
-def JoinedAviSynthScript(_OutputAviSynthScript,_LosslessFile,_AviSynthMemoryPerThread,_TotalThreads):
-    _JAS = open(_OutputAviSynthScript, 'w')
-    _JAS.write('LoadPlugin("' + os.path.normpath(ffms2_10bit_path) + '")\n')
-    _JAS.write('#SetMemoryMax(' + repr(_AviSynthMemoryPerThread) + ')\n')
-    for thread in range(_TotalThreads):
-        _CurrentThread = thread+1
-        _NewLosslessFile = _LosslessFile.replace('[NUM]', repr(_CurrentThread))
-        _JAS.write('tmp = FFVideoSource("' + _NewLosslessFile + '",colorspace="YV12_10-bit_hack",track=-1,pp="")\n')
-        if(thread==0):
-            if(_TotalThreads==1):
-                #first and only thread
-                _JAS.write('total1 = tmp\n')
-            else:
-                #first thread
-                _JAS.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
-        elif(thread==_TotalThreads-1):
+#generate_joined_avs joins lossless files from parallel encoding
+def generate_joined_avs(output_avs, lossless, avs_mem, total_threads):
+    joined_avs = open(_OutputAviSynthScript, 'w')
+    joined_avs.write('LoadPlugin("{0}")\n'.format(os.path.normpath(ffms2_10bit_path)))
+    joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem)
+    for thread in range(1, total_threads + 1):
+        write_source_line(joined_avs, lossless, thread)
+        if (thread == 1):
+            joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
+        elif (thread == total_threads - 1):
             #final thread
-            _JAS.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount())\n')
+            joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount())\n')
         else:
-            _JAS.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
-    _JAS.write('total1\n')
+            joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
+    joined_avs.write('total1\n')
+
+def write_source_line(avs, lossless, num):
+    lossless_out = lossless.replace('[NUM]', str(num))
+    avs.write('tmp = FFVideoSource("{0}",colorspace="YV12_10-bit_hack",track=-1,pp="")\n'.format(lossless_out))
+
 
 #CountAviSynthFrames counts number of frames in AviSynth Script
 def CountAviSynthFrames(AviSynthScript, proc):
@@ -77,7 +75,7 @@ def CountAviSynthFrames(AviSynthScript, proc):
     return (frame,proc)
 
 parser = optparse.OptionParser()
-parser.add_option('-t', '--threads', type='int', dest='Threads', default=4, help="Number of parallel encodes to spawn")
+parser.add_option('-t', '--threads', type='int', dest='threads', default=4, help="Number of parallel encodes to spawn")
 parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512, help="Value for SetMemoryMax() in threads")
 parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False, help="Encoding on linux, so use wine")
 parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True, help="Use avs2yuv piping [default]")
@@ -85,7 +83,12 @@ parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', def
 
 if(options.usewine):
     options.useavs2yuv = True
-_TotalThreads = options.Threads
+
+if (options.threads < 2):
+    print("I'm sorry, but there is currently no special case for a single thread.\n")
+    raise SystemExit
+
+_TotalThreads = options.threads
 _AviSynthMemoryPerThread = options.AVS_Mem_Per_Thread
 
 for file in args:
@@ -169,6 +172,6 @@ for file in args:
     # create joined lossless script
     print('Generating joined script.')
     if(options.usewine):
-        JoinedAviSynthScript(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),_AviSynthMemoryPerThread,_TotalThreads)
+        generate_joined_avs(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),_AviSynthMemoryPerThread,_TotalThreads)
     else:
-        JoinedAviSynthScript(_OutputAviSynthScript,_ThreadedLosslessFile,_AviSynthMemoryPerThread,_TotalThreads)
+        generate_joined_avs(_OutputAviSynthScript,_ThreadedLosslessFile,_AviSynthMemoryPerThread,_TotalThreads)
