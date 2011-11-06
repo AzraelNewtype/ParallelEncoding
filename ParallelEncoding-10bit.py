@@ -8,12 +8,21 @@
 import optparse, os, re, shutil, subprocess, sys, tempfile, time
 
 # user params
-avs2yuv_path = 'C:/encoding/avs2yuv.exe'
-x264_path = 'C:/encoding/x264/x264-10bit.exe'
+avs2yuv_path = 'C:/enc_tools/avs2yuv.exe'
+x264_path = 'C:/enc_tools/x264.exe'
+x264_10_path =  'C:/enc_tools/x264-10bit.exe'
 ffms2_10bit_path = 'C:/encoding/oldplugins/ffms2-10bit.dll'
 ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 
 x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
+
+def final_script_suffix(avs):
+""" Use this function to add things to the final script that you always
+    want but do not directly pertain to the split/join functionality.
+"""
+    avs.write("spline64resize(848,480) #SD")
+    avs.write('scxvid("out.stats") #WR')
+    avs.write('#TextSub("{0}") #SD'.format(script_out_path))
 
 # generate_parallel_avs creates trimmed files for parallel encoding
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_number):
@@ -28,12 +37,16 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_numb
     parallel_avs.write('Trim(start,end)\n')
 
 #generate_joined_avs joins lossless files from parallel encoding
-def generate_joined_avs(output_avs, lossless, avs_mem, total_threads):
+def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, depth):
     joined_avs = open(final_avs, 'w')
-    joined_avs.write('LoadPlugin("{0}")\n'.format(os.path.normpath(ffms2_10bit_path)))
+    if depth == 10:
+        filter_path = os.path.normpath(ffms2_10bit_path)
+    else
+        filter_path = os.path.normpath(ffms2_8bit_path)
+    joined_avs.write('LoadPlugin("{0}")\n'.format(filter_path))
     joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
     for thread in range(1, total_threads + 1):
-        write_source_line(joined_avs, lossless, thread)
+        write_source_line(joined_avs, lossless, thread, depth)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads - 1):
@@ -42,10 +55,16 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads):
         else:
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
+    final_script_suffix(joined_avs)
 
-def write_source_line(avs, lossless, num):
+def write_source_line(avs, lossless, num, depth):
     lossless_out = lossless.replace('[NUM]', str(num))
-    avs.write('tmp = FFVideoSource("{0}",colorspace="YV12_10-bit_hack",track=-1,pp="")\n'.format(lossless_out))
+    if depth == 10:
+        colorspace = 'YV12_10-bit_hack'
+    else:
+        colorspace = 'YV12'
+    avs.write('tmp = FFVideoSource("{0}",colorspace="{1}",track=-1,pp="")\n'.format(lossless_out,
+                                                                                    colorspace))
 
 
 #count_frames counts number of frames in AviSynth Script
@@ -84,6 +103,10 @@ parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=F
                   help="Encoding on linux, so use wine")
 parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True,
                   help="Use avs2yuv piping [default]")
+parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
+                  help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
+parser.add_option('-d', '--depth', type='int', dest='depth', default=8,
+                  help="Bit depth for lossless [default=8]")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
@@ -116,6 +139,7 @@ split_script = script_out_path + proj_name + '.[NUM].avs'
 final_avs = script_out_path + proj_name + '.joined.avs'
 lossless_path = script_out_path + 'Lossless' + os.sep
 split_output = lossless_path + proj_name + '.[NUM].mkv'
+depth = options.depth
 
 # remove old scripts and files before script is run
 if os.path.isdir(script_out_path):
@@ -177,7 +201,9 @@ for thread in range(total_threads):
 
 # create joined lossless script
 print('Generating joined script.')
+
+
 if(options.usewine):
-    generate_joined_avs(final_avs,'Z:' + split_output.replace('/','\\'),avs_mem,total_threads)
-else:
-    generate_joined_avs(final_avs,split_output,avs_mem,total_threads)
+    split_output = 'Z:' + split_output.replace('/','\\')
+
+generate_joined_avs(final_avs, split_output, avs_mem, total_threads, depth)
