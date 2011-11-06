@@ -29,7 +29,7 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_numb
 
 #generate_joined_avs joins lossless files from parallel encoding
 def generate_joined_avs(output_avs, lossless, avs_mem, total_threads):
-    joined_avs = open(_OutputAviSynthScript, 'w')
+    joined_avs = open(final_avs, 'w')
     joined_avs.write('LoadPlugin("{0}")\n'.format(os.path.normpath(ffms2_10bit_path)))
     joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
     for thread in range(1, total_threads + 1):
@@ -73,13 +73,17 @@ def count_frames(script_in, proc):
         print('Error: Could not count number of frames.')
         frame[3] = -1
     os.unlink(tempYUV)
-    return (frame,proc)
+    return (frame, proc)
 
 parser = optparse.OptionParser(usage="usage: %prog [options] input.avs")
-parser.add_option('-t', '--threads', type='int', dest='threads', default=4, help="Number of parallel encodes to spawn")
-parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512, help="Value for SetMemoryMax() in threads")
-parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False, help="Encoding on linux, so use wine")
-parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True, help="Use avs2yuv piping [default]")
+parser.add_option('-t', '--threads', type='int', dest='threads', default=4,
+                  help="Number of parallel encodes to spawn")
+parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512,
+                  help="Value for SetMemoryMax() in threads")
+parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False,
+                  help="Encoding on linux, so use wine")
+parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True,
+                  help="Use avs2yuv piping [default]")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
@@ -96,85 +100,84 @@ if len(args) < 1:
     print('No input file given. Use -h or --help for usage.')
     raise SystemExit
 
-for file in args:
-    (_path, _ext) = os.path.splitext(file)
-    # initial test
-    if(os.path.exists(file)==False or os.path.isfile(file)==False or _ext.lower().find('.avs')==-1):
-        print('No input AviSynth Script specified.')
-        print('Script quitting.')
-        raise SystemExit
+# Looping for multiple input is kinda stupid, loop elsewhere if you want multiple input
+infile = args[0]
+(fname, ext) = os.path.splitext(infile)
+# ensure positional argument is a real avs file.
+if(not os.path.exists(infile) or not os.path.isfile(infile) or ext.lower().find('.avs') == -1):
+    print('Input file does not exist or is not an avisynth script.')
+    raise SystemExit
 
-    # script vars
-    _InputAviSynthScript = os.path.abspath(file)
-    _ProjectName = os.path.basename(_path)
-    _ScriptsOutputPath = os.path.dirname(os.path.abspath(file)) + os.sep + _ProjectName + os.sep
-    _ThreadScript = _ScriptsOutputPath + _ProjectName + '.[NUM].avs'
-    _OutputAviSynthScript = _ScriptsOutputPath + _ProjectName + '.joined.avs'
-    _LosslessOutputPathPE = _ScriptsOutputPath + 'Lossless' + os.sep
-    _ThreadedLosslessFile = _LosslessOutputPathPE + _ProjectName + '.[NUM].mkv'
+# script vars
+avs_in = os.path.abspath(infile)
+proj_name = os.path.basename(fname)
+script_out_path = os.path.dirname(os.path.abspath(infile)) + os.sep + proj_name + os.sep
+split_script = script_out_path + proj_name + '.[NUM].avs'
+final_avs = script_out_path + proj_name + '.joined.avs'
+lossless_path = script_out_path + 'Lossless' + os.sep
+split_output = lossless_path + proj_name + '.[NUM].mkv'
 
-    # remove old scripts and files before script is run
-    if(os.path.isdir(_ScriptsOutputPath)==True):
-        shutil.rmtree(_ScriptsOutputPath)
+# remove old scripts and files before script is run
+if os.path.isdir(script_out_path):
+    shutil.rmtree(script_out_path)
 
-    # check to make sure dirs exist
-    for dir in (_ScriptsOutputPath, _LosslessOutputPathPE):
-        if(os.path.isdir(dir)==False):
-            os.makedirs(dir)
+# check to make sure dirs exist
+for dir in (script_out_path, lossless_path):
+    if not os.path.isdir(dir):
+        os.makedirs(dir)
 
-    # create trimmed scripts
-    print('Creating trimmed scripts.')
-    if(options.useavs2yuv):
-        _ThreadScriptFrame = list(range(total_threads))
-        proc = list(range(total_threads))
-    for thread in range(1,total_threads + 1):
-        _NewThreadScript = _ThreadScript.replace('[NUM]', str(thread))
-        if(options.usewine):
-            generate_parallel_avs(_NewThreadScript,'Z:' + _InputAviSynthScript.replace('/','\\'),avs_mem,total_threads,_CurrentThread)
-        else:
-            generate_parallel_avs(_NewThreadScript, _InputAviSynthScript, avs_mem, total_threads, thread)
-        if(options.useavs2yuv):
-            print('Counting frames in script {0}'.format(thread))
-            (_ThreadScriptFrame[thread-1],proc[thread-1]) = count_frames(_NewThreadScript, proc[thread-1])
-
-    if(options.useavs2yuv):
-        for thread in range(total_threads):
-            proc[thread].wait()
-
-    # create cmd batch files
-    _CmdLinePE = ''
-    _CmdLineInput = '"[input]"'
-    _CmdLineOutput = '"[output]"'
-    if(options.useavs2yuv):
-        _CmdLinePE = _CmdLinePE + '"' + os.path.normpath(avs2yuv_path) + '" -raw ' + _CmdLineInput + ' -o - | '
-        _CmdLineInput = '--frames [frames] --demuxer raw -'
-        if(_ThreadScriptFrame[0][3] > -1):
-            _CmdLineInput = '--input-res ' + repr(int(_ThreadScriptFrame[0][0])/2) + 'x' + _ThreadScriptFrame[0][1] + ' --fps ' + _ThreadScriptFrame[0][2] + ' ' + _CmdLineInput
-    _CmdLinePE = _CmdLinePE + '"' + os.path.normpath(x264_path) + '" ' + x264_extra_params + ' --crf 0 --threads 1 --thread-input --output ' + _CmdLineOutput + ' ' + _CmdLineInput
+# create trimmed scripts
+print('Creating trimmed scripts.')
+if options.useavs2yuv:
+    split_script_frames = list(range(total_threads))
     proc = list(range(total_threads))
-    for thread in range(total_threads):
-        _CurrentThread = thread+1
-        _NewThreadScript = _ThreadScript.replace('[NUM]', repr(_CurrentThread))
-        _NewLosslessFile = _ThreadedLosslessFile.replace('[NUM]', repr(_CurrentThread))
-        _NewCmdLinePE = _CmdLinePE.replace('[input]', _NewThreadScript)
-        _NewCmdLinePE = _NewCmdLinePE.replace('[output]', _NewLosslessFile)
-        if(options.useavs2yuv):
-            _NewCmdLinePE = _NewCmdLinePE.replace('[frames]', _ThreadScriptFrame[thread][3])
-        if(options.usewine):
-            _NewCmdLinePE = 'wine ' + _NewCmdLinePE
-            print(_NewCmdLinePE + '\n')
-            proc[thread] = subprocess.Popen(_NewCmdLinePE,shell=True)
-        else:
-            _NewCmdLinePE = '"' + _NewCmdLinePE + '"'
-            print(_NewCmdLinePE + '\n')
-            proc[thread] = subprocess.Popen('"' + _NewCmdLinePE + '"',shell=True)
+for thread in range(1,total_threads + 1):
+    new_split_script = split_script.replace('[NUM]', str(thread))
+    if(options.usewine):
+        generate_parallel_avs(new_split_script,'Z:' + avs_in.replace('/','\\'),avs_mem,total_threads,_CurrentThread)
+    else:
+        generate_parallel_avs(new_split_script, avs_in, avs_mem, total_threads, thread)
+    if(options.useavs2yuv):
+        print('Counting frames in script {0}'.format(thread))
+        (split_script_frames[thread-1],proc[thread-1]) = count_frames(new_split_script, proc[thread-1])
 
+if(options.useavs2yuv):
     for thread in range(total_threads):
         proc[thread].wait()
 
-    # create joined lossless script
-    print('Generating joined script.')
+# create cmd batch files
+enc_cmd = ''
+cmd_input = '"[input]"'
+cmd_output = '"[output]"'
+if(options.useavs2yuv):
+    enc_cmd = enc_cmd + '"' + os.path.normpath(avs2yuv_path) + '" -raw ' + cmd_input + ' -o - | '
+    cmd_input = '--frames [frames] --demuxer raw -'
+    if(split_script_frames[0][3] > -1):
+        cmd_input = '--input-res ' + str(int(split_script_frames[0][0])//2) + 'x' + split_script_frames[0][1] + ' --fps ' + split_script_frames[0][2] + ' ' + cmd_input
+enc_cmd = enc_cmd + '"' + os.path.normpath(x264_path) + '" ' + x264_extra_params + ' --crf 0 --threads 1 --thread-input --output ' + cmd_output + ' ' + cmd_input
+proc = list(range(total_threads))
+for thread in range(1, total_threads + 1):
+    new_split_script = split_script.replace('[NUM]', str(thread))
+    new_lossless = split_output.replace('[NUM]', str(thread))
+    new_cmd = enc_cmd.replace('[input]', new_split_script)
+    new_cmd = new_cmd.replace('[output]', new_lossless)
+    if(options.useavs2yuv):
+        new_cmd = new_cmd.replace('[frames]', split_script_frames[thread-1][3])
     if(options.usewine):
-        generate_joined_avs(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),avs_mem,total_threads)
+        new_cmd = 'wine ' + new_cmd
+        print(new_cmd + '\n')
+        proc[thread] = subprocess.Popen(new_cmd,shell=True)
     else:
-        generate_joined_avs(_OutputAviSynthScript,_ThreadedLosslessFile,avs_mem,total_threads)
+        new_cmd = '"' + new_cmd + '"'
+        print(new_cmd + '\n')
+        proc[thread] = subprocess.Popen('"' + new_cmd + '"',shell=True)
+
+for thread in range(total_threads):
+    proc[thread].wait()
+
+# create joined lossless script
+print('Generating joined script.')
+if(options.usewine):
+    generate_joined_avs(final_avs,'Z:' + split_output.replace('/','\\'),avs_mem,total_threads)
+else:
+    generate_joined_avs(final_avs,split_output,avs_mem,total_threads)
