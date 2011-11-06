@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8-*-
-#
-# Parallel Encoding for python
-#
-"""help
+""" Port of parallelencoding.cmd to python, cleaned from the ghastly batch
+    script standards for PEP8 compliance (not yet). Also adds 10bit
+    functionality.
 """
 
 import optparse, os, re, shutil, subprocess, sys, tempfile, time
@@ -15,18 +14,18 @@ ffms2_10bit_path='C:/encoding/oldplugins/ffms2-10bit.dll'
 
 x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
 
-#ParallelAviSynthScript creates trimmed files for parallel encoding
-def ParallelAviSynthScript(_OutputAviSynthScript,_MainAviSynthScript,_AviSynthMemoryPerThread,_TotalThreads,_ThreadNumber):
+# generate_parallel_avs creates trimmed files for parallel encoding
+def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_number):
     _ThreadMultiplier = _ThreadNumber-1
-    _PAS = open(_OutputAviSynthScript, 'w')
-    _PAS.write('SetMemoryMax(' + repr(_AviSynthMemoryPerThread) + ')\n')
-    _PAS.write('Import("' + _MainAviSynthScript + '")\n')
-    _PAS.write('start = (FrameCount() / ' + repr(_TotalThreads) + ') * ' + repr(_ThreadMultiplier) + '\n')
-    if(_ThreadNumber == _TotalThreads):
-        _PAS.write('end = FrameCount()\n')
+    parallel_avs = open(avs_out, 'w')
+    parallel_avs.write('SetMemoryMax({0})\n'.format(avs_mem))
+    parallel_avs.write('Import("{0}")\n'.format(main_avs))
+    parallel_avs.write('start = (FrameCount() / {0}) * {1}\n'.format(total_threads, thread_num - 1))
+    if(thread_num == total_threads):
+        parallel_avs.write('end = FrameCount()\n')
     else:
-        _PAS.write('end = start + (FrameCount() / ' + repr(_TotalThreads) + ') + 100\n')
-    _PAS.write('Trim(start,end)\n')
+        parallel_avs.write('end = start + (FrameCount() / {0}) + 100\n'.format(total_threads))
+    parallel_avs.write('Trim(start,end)\n')
 
 #JoinedAviSynthScript joins lossless files from parallel encoding
 def JoinedAviSynthScript(_OutputAviSynthScript,_LosslessFile,_AviSynthMemoryPerThread,_TotalThreads):
@@ -126,9 +125,9 @@ for file in args:
         _CurrentThread = thread+1
         _NewThreadScript = _ThreadScript.replace('[NUM]', repr(_CurrentThread))
         if(options.usewine):
-            ParallelAviSynthScript(_NewThreadScript,'Z:' + _InputAviSynthScript.replace('/','\\'),_AviSynthMemoryPerThread,_TotalThreads,_CurrentThread)
+            generate_parallel_avs(_NewThreadScript,'Z:' + _InputAviSynthScript.replace('/','\\'),_AviSynthMemoryPerThread,_TotalThreads,_CurrentThread)
         else:
-            ParallelAviSynthScript(_NewThreadScript,_InputAviSynthScript,_AviSynthMemoryPerThread,_TotalThreads,_CurrentThread)
+            generate_parallel_avs(_NewThreadScript,_InputAviSynthScript,_AviSynthMemoryPerThread,_TotalThreads,_CurrentThread)
         if(options.useavs2yuv):
             print('Counting frames in script ' + repr(_CurrentThread))
             (_ThreadScriptFrame[thread],proc[thread]) = CountAviSynthFrames(_NewThreadScript, proc[thread])
