@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8-*-
 #
 # Parallel Encoding for python
@@ -74,14 +74,14 @@ def CountAviSynthFrames(AviSynthScript, proc):
       result = True
       break
   if result == False:
-    print 'Error: Could not count number of frames.'
+    print('Error: Could not count number of frames.')
     frame[3] = -1
   os.unlink(tempYUV)
   return (frame,proc)
 
 #Print a help message if requested.
 if '-h' in sys.argv or '-help' in sys.argv or '--help' in sys.argv:
-  print __doc__
+  print(__doc__)
   raise SystemExit
   
 parser = optparse.OptionParser()
@@ -100,9 +100,9 @@ for file in args:
   (_path, _ext) = os.path.splitext(file)
   # initial test
   if(os.path.exists(file)==False or os.path.isfile(file)==False or _ext.lower().find('.avs')==-1):
-    print 'No input AviSynth Script specified.'
-    print 'Script quitting.'
-    raw_input('Press enter to continue . . .')
+    print('No input AviSynth Script specified.')
+    print('Script quitting.')
+    input('Press enter to continue . . .')
     raise SystemExit
   
   # script vars
@@ -124,10 +124,10 @@ for file in args:
       os.makedirs(dir)
   
   # create trimmed scripts
-  print 'Creating trimmed scripts.'
+  print('Creating trimmed scripts.')
   if(options.useavs2yuv):
-    _ThreadScriptFrame = range(_TotalThreads)
-    proc = range(_TotalThreads)
+    _ThreadScriptFrame = list(range(_TotalThreads))
+    proc = list(range(_TotalThreads))
   for thread in range(_TotalThreads):
     _CurrentThread = thread+1
     _NewThreadScript = _ThreadScript.replace('[NUM]', repr(_CurrentThread))
@@ -136,7 +136,7 @@ for file in args:
     else:
       ParallelAviSynthScript(_NewThreadScript,_InputAviSynthScript,_AviSynthMemoryPerThread,_TotalThreads,_CurrentThread)
     if(options.useavs2yuv):
-      print 'Counting frames in script ' + repr(_CurrentThread)
+      print('Counting frames in script ' + repr(_CurrentThread))
       (_ThreadScriptFrame[thread],proc[thread]) = CountAviSynthFrames(_NewThreadScript, proc[thread])
   
   if(options.useavs2yuv):
@@ -153,7 +153,7 @@ for file in args:
     if(_ThreadScriptFrame[0][3] > -1):
       _CmdLineInput = '--input-res ' + repr(int(_ThreadScriptFrame[0][0])/2) + 'x' + _ThreadScriptFrame[0][1] + ' --fps ' + _ThreadScriptFrame[0][2] + ' ' + _CmdLineInput
   _CmdLinePE = _CmdLinePE + '"' + os.path.normpath(_X264PathPE) + '" ' + _X264ExtraParameters + ' --crf 0 --threads 1 --thread-input --output ' + _CmdLineOutput + ' ' + _CmdLineInput
-  proc = range(_TotalThreads)
+  proc = list(range(_TotalThreads))
   for thread in range(_TotalThreads):
     _CurrentThread = thread+1
     _NewThreadScript = _ThreadScript.replace('[NUM]', repr(_CurrentThread))
@@ -164,18 +164,18 @@ for file in args:
       _NewCmdLinePE = _NewCmdLinePE.replace('[frames]', _ThreadScriptFrame[thread][3])
     if(options.usewine):
       _NewCmdLinePE = 'wine ' + _NewCmdLinePE
-      print _NewCmdLinePE + '\n'
+      print(_NewCmdLinePE + '\n')
       proc[thread] = subprocess.Popen(_NewCmdLinePE,shell=True)
     else:
       _NewCmdLinePE = '"' + _NewCmdLinePE + '"'
-      print _NewCmdLinePE + '\n'
+      print(_NewCmdLinePE + '\n')
       proc[thread] = subprocess.Popen('"' + _NewCmdLinePE + '"',shell=True)
   
   for thread in range(_TotalThreads):
     proc[thread].wait()
   
   # create joined lossless script
-  print 'Generating joined script.'
+  print('Generating joined script.')
   if(options.usewine):
     JoinedAviSynthScript(_OutputAviSynthScript,'Z:' + _ThreadedLosslessFile.replace('/','\\'),_AviSynthMemoryPerThread,_TotalThreads)
   else:
