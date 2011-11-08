@@ -101,8 +101,6 @@ parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', d
                   help="Value for SetMemoryMax() in threads")
 parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=False,
                   help="Encoding on linux, so use wine")
-parser.add_option('-a', '--avs2yuv', action='store_true', dest='useavs2yuv', default=True,
-                  help="Use avs2yuv piping [default]")
 parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
                   help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
 parser.add_option('-d', '--depth', type='int', dest='depth', default=8,
@@ -192,7 +190,6 @@ for thread in range(1, total_threads + 1):
         print(new_cmd + '\n')
         proc[thread] = subprocess.Popen(new_cmd,shell=True)
     else:
-        new_cmd = '"' + new_cmd + '"'
         print(new_cmd + '\n')
         proc[thread] = subprocess.Popen('"' + new_cmd + '"',shell=True)
 
