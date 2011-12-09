@@ -9,12 +9,12 @@ import optparse, os, re, shutil, subprocess, sys, tempfile, time
 
 # user params
 avs2yuv_path = 'C:/enc_tools/avs2yuv.exe'
-x264_path = 'C:/enc_tools/x264.exe'
+x264_8_path = 'C:/enc_tools/x264.exe'
 x264_10_path =  'C:/enc_tools/x264-10bit.exe'
 ffms2_10bit_path = 'C:/encoding/oldplugins/ffms2-10bit.dll'
 ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 
-x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
+x264_extra_params='--preset ultrafast --subme 1'
 
 def final_script_suffix(avs):
     """ Use this function to add things to the final script that you always
@@ -25,7 +25,7 @@ def final_script_suffix(avs):
     avs.write('#TextSub("{0}") #SD'.format(script_out_path))
 
 # generate_parallel_avs creates trimmed files for parallel encoding
-def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_number):
+def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
     parallel_avs = open(avs_out, 'w')
     parallel_avs.write('SetMemoryMax({0})\n'.format(avs_mem))
     parallel_avs.write('Import("{0}")\n'.format(main_avs))
@@ -37,16 +37,16 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_numb
     parallel_avs.write('Trim(start,end)\n')
 
 #generate_joined_avs joins lossless files from parallel encoding
-def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, depth):
+def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
     joined_avs = open(final_avs, 'w')
-    if depth == 10:
+    if tenbit:
         filter_path = os.path.normpath(ffms2_10bit_path)
     else:
         filter_path = os.path.normpath(ffms2_8bit_path)
     joined_avs.write('LoadPlugin("{0}")\n'.format(filter_path))
     joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
     for thread in range(1, total_threads + 1):
-        write_source_line(joined_avs, lossless, thread, depth)
+        write_source_line(joined_avs, lossless, thread, tenbit)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads - 1):
@@ -57,9 +57,9 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, depth):
     joined_avs.write('total1\n')
     final_script_suffix(joined_avs)
 
-def write_source_line(avs, lossless, num, depth):
+def write_source_line(avs, lossless, num, tenbit):
     lossless_out = lossless.replace('[NUM]', str(num))
-    if depth == 10:
+    if tenbit:
         colorspace = 'YV12_10-bit_hack'
     else:
         colorspace = 'YV12'
@@ -75,10 +75,10 @@ def count_frames(script_in, proc):
     frames_cmd = '"{0}" -raw -frames 1 "[input]" -o "{1}"'.format(os.path.normpath(avs2yuv_path), tempYUV)
     if(options.usewine):
         frames_cmd = 'wine ' + frames_cmd.replace('[input]', 'Z:' + script_in.replace('/','\\'))
-        proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     else:
         frames_cmd = frames_cmd.replace('[input]', script_in)
-        proc = subprocess.Popen('"' + frames_cmd + '"',shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
+
+    proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
     p = re.compile ('.+: ([0-9]+)x([0-9]+), ([0-9]+/[0-9]+) fps, ([0-9]+) frames')
     result = False
@@ -103,8 +103,8 @@ parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=F
                   help="Encoding on linux, so use wine")
 parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
                   help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
-parser.add_option('-d', '--depth', type='int', dest='depth', default=8,
-                  help="Bit depth for lossless [default=8]")
+parser.add_option('-d', '--tenbit', type='store_true', dest='tenbit', default=False,
+                  help="Turns on hi10p mode. [default=False]")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
@@ -137,7 +137,7 @@ split_script = script_out_path + proj_name + '.[NUM].avs'
 final_avs = script_out_path + proj_name + '.joined.avs'
 lossless_path = script_out_path + 'Lossless' + os.sep
 split_output = lossless_path + proj_name + '.[NUM].mkv'
-depth = options.depth
+tenbit = options.tenbit
 
 # remove old scripts and files before script is run
 if os.path.isdir(script_out_path):
@@ -156,7 +156,7 @@ if options.useavs2yuv:
 for thread in range(1,total_threads + 1):
     new_split_script = split_script.replace('[NUM]', str(thread))
     if(options.usewine):
-        generate_parallel_avs(new_split_script,'Z:' + avs_in.replace('/','\\'),avs_mem,total_threads,_CurrentThread)
+        generate_parallel_avs(new_split_script,'Z:' + avs_in.replace('/','\\'), avs_mem, total_threads, thread)
     else:
         generate_parallel_avs(new_split_script, avs_in, avs_mem, total_threads, thread)
     if(options.useavs2yuv):
@@ -166,6 +166,12 @@ for thread in range(1,total_threads + 1):
 if(options.useavs2yuv):
     for thread in range(total_threads):
         proc[thread].wait()
+
+if tenbit:
+    x264_extra_params += '--input-depth 16'
+    x264_path = x264_10_path
+else:
+    x264_path = x264_8_path
 
 # create cmd batch files
 enc_cmd = ''
@@ -187,11 +193,8 @@ for thread in range(1, total_threads + 1):
         new_cmd = new_cmd.replace('[frames]', split_script_frames[thread-1][3])
     if(options.usewine):
         new_cmd = 'wine ' + new_cmd
-        print(new_cmd + '\n')
-        proc[thread] = subprocess.Popen(new_cmd,shell=True)
-    else:
-        print(new_cmd + '\n')
-        proc[thread] = subprocess.Popen('"' + new_cmd + '"',shell=True)
+    print(new_cmd + '\n')
+    proc[thread] = subprocess.Popen(new_cmd,shell=True)
 
 for thread in range(total_threads):
     proc[thread].wait()
@@ -203,4 +206,4 @@ print('Generating joined script.')
 if(options.usewine):
     split_output = 'Z:' + split_output.replace('/','\\')
 
-generate_joined_avs(final_avs, split_output, avs_mem, total_threads, depth)
+generate_joined_avs(final_avs, split_output, avs_mem, total_threads, tenbit)
