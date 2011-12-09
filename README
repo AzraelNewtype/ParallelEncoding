@@ -1,0 +1,16 @@
+Tool for encoding multiple segmented lossless h.264 files from a given avs.
+Expanded to work with TheFluff's hacked ffms2 for 10bit lossless capabilities.
+
+Usage: ParallelEncoding.py [options] input.avs
+
+Options:
+  -h, --help            show this help message and exit
+  -t THREADS, --threads=THREADS
+                        Number of parallel encodes to spawn
+  -m AVS_MEM_PER_THREAD, --max-memory=AVS_MEM_PER_THREAD
+                        Value for SetMemoryMax() in threads
+  -w, --wine            Encoding on linux, so use wine
+  -n, --no-avs2yuv      Do not use avs2yuv. Strange default action requires
+                        explicitly turning off.
+  -d, --tenbit          Turns on hi10p mode. [default=False]
+
