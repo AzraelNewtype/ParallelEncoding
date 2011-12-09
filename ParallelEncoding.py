@@ -17,9 +17,9 @@ ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 x264_extra_params='--preset ultrafast --subme 1 --input-depth 16'
 
 def final_script_suffix(avs):
-""" Use this function to add things to the final script that you always
-    want but do not directly pertain to the split/join functionality.
-"""
+    """ Use this function to add things to the final script that you always
+        want but do not directly pertain to the split/join functionality.
+    """
     avs.write("spline64resize(848,480) #SD")
     avs.write('scxvid("out.stats") #WR')
     avs.write('#TextSub("{0}") #SD'.format(script_out_path))
@@ -41,7 +41,7 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, depth):
     joined_avs = open(final_avs, 'w')
     if depth == 10:
         filter_path = os.path.normpath(ffms2_10bit_path)
-    else
+    else:
         filter_path = os.path.normpath(ffms2_8bit_path)
     joined_avs.write('LoadPlugin("{0}")\n'.format(filter_path))
     joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
