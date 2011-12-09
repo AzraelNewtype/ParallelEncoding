@@ -103,7 +103,7 @@ parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=F
                   help="Encoding on linux, so use wine")
 parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
                   help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
-parser.add_option('-d', '--tenbit', type='store_true', dest='tenbit', default=False,
+parser.add_option('-d', '--tenbit', action='store_true', dest='tenbit', default=False,
                   help="Turns on hi10p mode. [default=False]")
 (options, args) = parser.parse_args()
 
