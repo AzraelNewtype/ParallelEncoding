@@ -20,9 +20,9 @@ def final_script_suffix(avs):
     """ Use this function to add things to the final script that you always
         want but do not directly pertain to the split/join functionality.
     """
-    avs.write("spline64resize(848,480) #SD")
-    avs.write('scxvid("out.stats") #WR')
-    avs.write('#TextSub("{0}") #SD'.format(script_out_path))
+    avs.write("##spline64resize(848,480) # [SD][WR]\n")
+    avs.write('##scxvid("out.stats") # [WR]\n')
+    avs.write('##TextSub("{0}") # [SD]\n'.format(script_out_path))
 
 # generate_parallel_avs creates trimmed files for parallel encoding
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
@@ -194,7 +194,7 @@ for thread in range(1, total_threads + 1):
     if(options.usewine):
         new_cmd = 'wine ' + new_cmd
     print(new_cmd + '\n')
-    proc[thread] = subprocess.Popen(new_cmd,shell=True)
+    proc[thread-1] = subprocess.Popen(new_cmd,shell=True)
 
 for thread in range(total_threads):
     proc[thread].wait()
