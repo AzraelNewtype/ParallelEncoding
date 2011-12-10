@@ -24,8 +24,8 @@ def final_script_suffix(avs):
     avs.write('##scxvid("out.stats") # [WR]\n')
     avs.write('##TextSub("{0}") # [SD]\n'.format(script_out_path))
 
-# generate_parallel_avs creates trimmed files for parallel encoding
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
+    """ generate_parallel_avs creates trimmed files for parallel encoding """
     parallel_avs = open(avs_out, 'w')
     parallel_avs.write('SetMemoryMax({0})\n'.format(avs_mem))
     parallel_avs.write('Import("{0}")\n'.format(main_avs))
@@ -36,8 +36,8 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num)
         parallel_avs.write('end = start + (FrameCount() / {0}) + 100\n'.format(total_threads))
     parallel_avs.write('Trim(start,end)\n')
 
-#generate_joined_avs joins lossless files from parallel encoding
 def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
+    """ generate_joined_avs joins lossless files from parallel encoding """
     joined_avs = open(final_avs, 'w')
     if tenbit:
         filter_path = os.path.normpath(ffms2_10bit_path)
