@@ -1,5 +1,16 @@
-Tool for encoding multiple segmented lossless h.264 files from a given avs.
-Expanded to work with TheFluff's hacked ffms2 for 10bit lossless capabilities.
+generate_initial_avs.py takes a fairly simple template file to automate 
+repetitive script generation, such as for a weekly show. There are two special
+fields, [[d2v]] and [[trims:N]], where d2v is replaced with the d2v supplied,
+and N is an integer corresponding to the number of segments in the episode.
+N instances of Trim(0,0) will be generated. Returns epnum.avs for handing off
+to ParallelEncoding.py
+
+Usage: ./generate_initial_script.py template d2v epnum
+
+
+ParallelEncoding.py is a tool for encoding multiple segmented lossless h.264 
+files from a given avs. Expanded to work with TheFluff's hacked ffms2 for 10bit
+lossless capabilities.
 
 Usage: ParallelEncoding.py [options] input.avs
 
@@ -13,4 +24,3 @@ Options:
   -n, --no-avs2yuv      Do not use avs2yuv. Strange default action requires
                         explicitly turning off.
   -d, --tenbit          Turns on hi10p mode. [default=False]
-
