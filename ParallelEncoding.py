@@ -49,7 +49,7 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
         write_source_line(joined_avs, lossless, thread, tenbit)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
-        elif (thread == total_threads - 1):
+        elif (thread == total_threads):
             #final thread
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount())\n')
         else:
