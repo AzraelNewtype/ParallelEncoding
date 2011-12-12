@@ -49,8 +49,7 @@ def cut_audio_and_make_chapters(ep_num, temp_name):
     aud_in = get_audiofile_name(ep_num)
     cmd = "{1} -mr -i '{4}' -o {0}_aud.mka -t {2}{3}.txt -c {0}.xml {0}.avs".format(
         ep_num, g_dic["vfrpy"], g_dic["chap_temp"], temp_name, aud_in)
-    args = shlex.split(cmd)
-    p = subprocess.Popen(args)
+    split_and_blind_call(cmd)
 
 def encode_wr(ep_num, prefix, temp_name):
     #cut_audio_and_make_chapters(ep_num, temp_name)
