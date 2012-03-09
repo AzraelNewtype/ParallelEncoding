@@ -1,20 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8-*-
 """ Port of parallelencoding.cmd to python, cleaned from the ghastly batch
-    script standards for PEP8 compliance (not yet). Also adds 10bit
-    functionality.
+    script standards for PEP8 compliance. Also adds 10bit functionality.
 """
 
-import optparse, os, re, shutil, subprocess, sys, tempfile, time
+import optparse
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import yaml
 
-# user params
-avs2yuv_path = 'C:/enc_tools/avs2yuv.exe'
-x264_8_path = 'C:/enc_tools/x264.exe'
-x264_10_path =  'C:/enc_tools/x264-10bit.exe'
-ffms2_10bit_path = 'C:/avsfilters/ffms-10-bithack/ffms2.dll'
-ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
+# user params, set via config but declared globally for the moment
+avs2yuv_path = ''
+x264_8_path = ''
+x264_10_path =  ''
+x264_extra_params=''
 
-x264_extra_params='--preset ultrafast --subme 1'
+def read_config():
+    """ Read encoder.yaml and fill the values into the globals, so they don't
+        need to be in the script.
+    """
+    try:
+        with open("encoder.yaml") as yaml_in:
+            config = yaml.load(yaml_in)
+    except IOError:
+        print("You seem to be missing the config file, encoder.yaml")
+        print("Cannot continue without it.")
+        raise SystemExit
+
+    avs2yuv_path = config['Global']['avs2yuv']
+    x264_8_path = config['Global']['x264_8']
+    x264_10_path = config['Global']['x264_10']
+    x264_extra_params = config['Global']['x264_extra_params']
 
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
     """ generate_parallel_avs creates trimmed files for parallel encoding """
@@ -70,7 +91,6 @@ def write_source_line(avs, lossless, num, tenbit):
         colorspace = 'YV12'
     avs.write('tmp = FFVideoSource("{0}",colorspace="{1}",track=-1,pp="")\n'.format(lossless_out,
                                                                                     colorspace))
-
 
 #count_frames counts number of frames in AviSynth Script
 def count_frames(script_in, proc):

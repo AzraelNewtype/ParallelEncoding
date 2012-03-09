@@ -1,0 +1,5 @@
+Global:
+    avs2yuv: C:/enc_tools/avs2yuv.exe
+    x264_8: C:/enc_tools/x264.exe
+    x264_10:  C:/enc_tools/x264-10bit.exe
+    x264_extra_params: --preset ultrafast --subme 1
