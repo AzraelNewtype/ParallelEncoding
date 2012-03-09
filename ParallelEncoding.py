@@ -184,10 +184,10 @@ if(options.useavs2yuv):
     enc_cmd = enc_cmd + '"' + os.path.normpath(avs2yuv_path) + '" -raw ' + cmd_input + ' -o - | '
     if(int(split_script_frames[0][3]) > -1):
         if(tenbit):
-            width = str(int(split_script_frames[0][0])//2) 
+            width = str(int(split_script_frames[0][0])//2)
         else:
             width = split_script_frames[0][0]
-        cmd_input = "--input-res {0}x{1} ".format(width,split_script_frames[0][1]) 
+        cmd_input = "--input-res {0}x{1} ".format(width,split_script_frames[0][1])
         cmd_input += "--fps {0} --frames [frames] --demuxer raw -".format(split_script_frames[0][2])
 enc_cmd = enc_cmd + '"' + os.path.normpath(x264_path) + '" ' + x264_extra_params + ' --crf 0 --threads 1 --thread-input --output ' + cmd_output + ' ' + cmd_input
 proc = list(range(total_threads))
