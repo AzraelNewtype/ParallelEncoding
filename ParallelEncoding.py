@@ -11,7 +11,7 @@ import optparse, os, re, shutil, subprocess, sys, tempfile, time
 avs2yuv_path = 'C:/enc_tools/avs2yuv.exe'
 x264_8_path = 'C:/enc_tools/x264.exe'
 x264_10_path =  'C:/enc_tools/x264-10bit.exe'
-ffms2_10bit_path = 'C:/encoding/oldplugins/ffms2-10bit.dll'
+ffms2_10bit_path = 'C:/avsfilters/ffms-10-bithack/ffms2.dll'
 ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 
 x264_extra_params='--preset ultrafast --subme 1'
@@ -20,9 +20,12 @@ def final_script_suffix(avs):
     """ Use this function to add things to the final script that you always
         want but do not directly pertain to the split/join functionality.
     """
-    avs.write("##spline64resize(848,480) # [SD][WR]\n")
-    avs.write('##scxvid("out.stats") # [WR]\n')
-    avs.write('##TextSub("{0}") # [SD]\n'.format(script_out_path))
+    avs.write('LoadPlugin("C:\\avsfilters\\dither-1.13.3\\dither.dll")\n')
+    avs.write('Import("C:\\avsfilters\\dither-1.13.3\\dither.avsi")\n')
+    avs.write('#dither_convey_yuv4xxp16_on_yvxx() # [HD]\n')
+    avs.write('dither_resize16(848,480, kernel="spline64").ditherpost() # [SD][WR]\n')
+    avs.write('scxvid("out.stats") # [WR]\n')
+    avs.write('#TextSub("{0}") # [SD]\n'.format(script_out_path))
 
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
     """ generate_parallel_avs creates trimmed files for parallel encoding """
@@ -179,9 +182,13 @@ cmd_input = '"[input]"'
 cmd_output = '"[output]"'
 if(options.useavs2yuv):
     enc_cmd = enc_cmd + '"' + os.path.normpath(avs2yuv_path) + '" -raw ' + cmd_input + ' -o - | '
-    cmd_input = '--frames [frames] --demuxer raw -'
-    if(split_script_frames[0][3] > -1):
-        cmd_input = '--input-res ' + str(int(split_script_frames[0][0])//2) + 'x' + split_script_frames[0][1] + ' --fps ' + split_script_frames[0][2] + ' ' + cmd_input
+    if(int(split_script_frames[0][3]) > -1):
+        if(tenbit):
+            width = str(int(split_script_frames[0][0])//2) 
+        else:
+            width = split_script_frames[0][0]
+        cmd_input = "--input-res {0}x{1} ".format(width,split_script_frames[0][1]) 
+        cmd_input += "--fps {0} --frames [frames] --demuxer raw -".format(split_script_frames[0][2])
 enc_cmd = enc_cmd + '"' + os.path.normpath(x264_path) + '" ' + x264_extra_params + ' --crf 0 --threads 1 --thread-input --output ' + cmd_output + ' ' + cmd_input
 proc = list(range(total_threads))
 for thread in range(1, total_threads + 1):
