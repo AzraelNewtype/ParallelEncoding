@@ -16,17 +16,6 @@ ffms2_8bit_path = 'C:/avsfilters/ffms2.dll'
 
 x264_extra_params='--preset ultrafast --subme 1'
 
-def final_script_suffix(avs):
-    """ Use this function to add things to the final script that you always
-        want but do not directly pertain to the split/join functionality.
-    """
-    avs.write('LoadPlugin("C:\\avsfilters\\dither-1.13.3\\dither.dll")\n')
-    avs.write('Import("C:\\avsfilters\\dither-1.13.3\\dither.avsi")\n')
-    avs.write('#dither_convey_yuv4xxp16_on_yvxx() # [HD]\n')
-    avs.write('dither_resize16(848,480, kernel="spline64").ditherpost() # [SD][WR]\n')
-    avs.write('scxvid("out.stats") # [WR]\n')
-    avs.write('#TextSub("{0}") # [SD]\n'.format(script_out_path))
-
 def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num):
     """ generate_parallel_avs creates trimmed files for parallel encoding """
     parallel_avs = open(avs_out, 'w')
@@ -40,14 +29,28 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num)
     parallel_avs.write('Trim(start,end)\n')
 
 def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
-    """ generate_joined_avs joins lossless files from parallel encoding """
+    """ generate_joined_avs joins lossless files from parallel encoding, adding
+        to a user given template file for easy alteration of final encode handling.
+    """
+    try:
+        with open(joined_template) as f:
+            temp_lines = f.readlines()
+    except IOError:
+        print("Unable to load output template.")
+        raise SystemExit
+    lossless_pattern = re.compile(r'\[\[lossless\]\]')
+    script_out_pattern = re.compile(r'\[\[OutDir\]\]')
     joined_avs = open(final_avs, 'w')
-    if tenbit:
-        filter_path = os.path.normpath(ffms2_10bit_path)
-    else:
-        filter_path = os.path.normpath(ffms2_8bit_path)
-    joined_avs.write('LoadPlugin("{0}")\n'.format(filter_path))
-    joined_avs.write('#SetMemoryMax({0})\n'.format(avs_mem))
+    for raw_ln in temp_lines:
+        line = raw_ln.rstrip()
+        if lossless_pattern.search(line):
+            write_lossless_lines(joined_avs, lossless, total_threads, tenbit)
+            line = ""
+        if script_out_pattern.search(line):
+            line = script_out_pattern.sub(script_out_path,line)
+        joined_avs.write("{0}{1}".format(line,os.linesep))
+
+def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
     for thread in range(1, total_threads + 1):
         write_source_line(joined_avs, lossless, thread, tenbit)
         if (thread == 1):
@@ -58,7 +61,6 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
         else:
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
-    final_script_suffix(joined_avs)
 
 def write_source_line(avs, lossless, num, tenbit):
     lossless_out = lossless.replace('[NUM]', str(num))
@@ -97,7 +99,7 @@ def count_frames(script_in, proc):
     os.unlink(tempYUV)
     return (frame, proc)
 
-parser = optparse.OptionParser(usage="usage: %prog [options] input.avs")
+parser = optparse.OptionParser(usage="usage: %prog [options] input.avs output_template")
 parser.add_option('-t', '--threads', type='int', dest='threads', default=4,
                   help="Number of parallel encodes to spawn")
 parser.add_option('-m', '--max-memory', type='int', dest='AVS_Mem_Per_Thread', default=512,
@@ -130,6 +132,11 @@ infile = args[0]
 # ensure positional argument is a real avs file.
 if(not os.path.exists(infile) or not os.path.isfile(infile) or ext.lower().find('.avs') == -1):
     print('Input file does not exist or is not an avisynth script.')
+    raise SystemExit
+
+joined_template = args[1]
+if(not os.path.exists(joined_template) or not os.path.isfile(joined_template)):
+    print('Given output template does not exist.')
     raise SystemExit
 
 # script vars

@@ -12,7 +12,13 @@ ParallelEncoding.py is a tool for encoding multiple segmented lossless h.264
 files from a given avs. Expanded to work with TheFluff's hacked ffms2 for 10bit
 lossless capabilities.
 
-Usage: ParallelEncoding.py [options] input.avs
+The format of the output template is similar to the initial output template.
+[[lossless]] triggers the output of the lossless source lines, and [[OutDir]]
+inserts the path of the output folder into a line, primarily useful for TextSub,
+which needs a full absolute path. The rest of the file should be whatever you use
+to encode your final versions.
+
+Usage: ParallelEncoding.py [options] input.avs output_template
 
 Options:
   -h, --help            show this help message and exit
