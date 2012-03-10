@@ -3,3 +3,35 @@ Global:
     x264_8: C:/enc_tools/x264.exe
     x264_10:  C:/enc_tools/x264-10bit.exe
     x264_extra_params: --preset ultrafast --subme 1
+    mkvmerge: C:/Program Files (x86)/MKVtoolnix/mkvmerge.exe
+    vfrpy:  C:/enc_tools/vfr/vfr.py
+Series:
+    gobus:
+        full_name: Spec-Ops Cell Go Busters
+        chap_temp: C:/enc_tools/sentai.txt
+        wr_dest: C:/Dropbox/Over-Time/
+        hd_opts: --preset veryslow --tune film --crf 23.5 --keyint 240 --colormatrix bt709
+        wr_opts: >
+            --profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 
+            --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709
+        sd_opts: >
+            --profile main --level 3 --preset veryslow --crf 25 --keyint 240 --vbv-bufsize 8000 
+            --vbv-maxrate 8000 --partitions p8x8,b8x8,i4x4 --tune film,fastdecode --colormatrix bt709 
+            --sar 160:159
+        fonts:
+            - C:/Users/Chris/Documents/Gokai/calibri.ttf
+            - C:/Users/Chris/Documents/Gokai/CAS_ANTI.TTF
+            - C:/Users/Chris/Documents/Gokai/CAS_ANTN.TTF
+    garo:
+        full_name: GARO MakaiSenki
+        chap_temp: C:/enc_tools/garo.txt
+        wr_dest: C:/Dropbox/garo/
+        hd_opts: --preset veryslow --tune film --crf 21.5 --keyint 300 --colormatrix bt709
+        sd_opts: --profile main --level 3 --preset veryslow --crf 23 --keyint 300 --vbv-bufsize 8000 --vbv-maxrate 8000 --partitions p8x8,b8x8,i4x4 --tune film,fastdecode --colormatrix bt709 --sar 160:159
+        fonts:
+            - C:/Users/chris/Dropbox/Garo/Fonts/SilkRoad.ttf
+            - C:/Users/chris/Dropbox/Garo/Fonts/calibri.ttf
+            - C:/Users/chris/Dropbox/Garo/Fonts/calibrii.ttf
+            - C:/Users/chris/Dropbox/Garo/Fonts/calibrib.ttf
+            - C:/Users/chris/Dropbox/Garo/Fonts/calibriz.ttf
+            - C:/Users/chris/Dropbox/Garo/Fonts/nyala.ttf
