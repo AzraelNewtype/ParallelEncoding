@@ -1,6 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import shlex, subprocess, re, sys, os, glob
+import argparse
+import glob
+import os
+import re
+import shlex
+import subprocess
+import sys
+import yaml
 
 #This is ugly but I felt like not using a whole mess of different globals at least
 # TODO: Split this hunk of shit into two config files: global and per-series
@@ -19,6 +26,10 @@ g_fonts = ["C:/Users/Chris/Documents/Gokai/calibri.ttf",
            "C:/Users/Chris/Documents/Gokai/CAS_ANTI.TTF",
            "C:/Users/Chris/Documents/Gokai/CAS_ANTN.TTF"]
 
+
+class Opts(object):
+    pass
+
 def prepare_mode_avs(ep_num, mode):
     basename = "{0}.joined.avs".format(ep_num)
     with open(basename) as f:
@@ -28,9 +39,9 @@ def prepare_mode_avs(ep_num, mode):
     with open(outname, "w") as f:
         for raw_line in lines:
             line = raw_line.rstrip()
-            if re.match("##", line):
-                m = re.search(r"##(.+)#(.+)", line)
-                if re.search("\[{0}\]".format(mode), m.group(2)):
+            if re.match("#", line):
+                m = re.search("#(.+)#(.+)", line)
+                if m and re.search("\[{0}\]".format(mode), m.group(2)):
                     line = m.group(1)
                 else:
                     line = None
@@ -57,14 +68,15 @@ def get_stats_name(ep_num):
 
 def cut_audio_and_make_chapters(ep_num, temp_name):
     aud_in = get_audiofile_name(ep_num)
-    cmd = "{1} -mr -i '{4}' -o {0}_aud.mka -t {2}{3}.txt -c {0}.xml {0}.avs".format(
-        ep_num, g_dic["vfrpy"], g_dic["chap_temp"], temp_name, aud_in)
+    cmd = "{0}.avs {1} -mr -i '{2}' -o {0}_aud.mka".format(ep_num, g_dic["vfrpy"], aud_in)
+    if temp_name:
+        cmd += " -t {0}{1}.txt -c {2}.xml".format(g_dic['chap_temp'], temp_name, ep_num)
     split_and_blind_call(cmd)
 
 def encode_wr(ep_num, prefix, temp_name):
     cut_audio_and_make_chapters(ep_num, temp_name)
     prepare_mode_avs(ep_num, "WR")
-    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka --sar 160:159 -o {2}{1}wr.mp4 {1}.WR.avs".format(g_dic["x264_8"], ep_num,
+    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}.WR.avs".format(g_dic["x264_8"], ep_num,
                                                                                                                               prefix, g_dic["wr_opts"])
     split_and_blind_call(cmd)
     #move_wr_bits(ep_num, prefix)
@@ -123,7 +135,7 @@ def mux_hd_raw(ep_num, group):
 def mux_fonts_cmd():
     font_switches = ""
     for font in g_fonts:
-        font_switches += " --attachment-mime-type application/x-truetype-font"
+        font_switches += ' --attachment-mime-type application/x-truetype-font'
         font_switches += ' --attachment-name "{0}"'.format(os.path.basename(font))
         font_switches += ' --attach-file "{0}"'.format(font)
     return font_switches
@@ -131,7 +143,7 @@ def mux_fonts_cmd():
 def split_and_blind_call(cmd):
     args = shlex.split(cmd)
     #subprocess.Popen(args)
-    print(args)
+    print(' '.join(args))
 
 def move_wr_bits(ep_num, prefix):
     wr_cmd = "copy {0}{1}wr.mp4 {2}".format(prefix, ep_num, g_dic["wr_dest"])
@@ -143,5 +155,20 @@ def move_wr_bits(ep_num, prefix):
     split_and_blind_call(stat_out_cmd)
 
 if __name__ == "__main__":
-    encode_wr("41", "g", "sentai")
-    encode_hd("41", False, "THISFILEHASNOSUBS")
+    parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
+    parser.add_argument('epnum', help="Episode number to process.", type=int)
+    parser.add_argument('enc_type', choices=["sd", "hd", "wr"], help="Which set of encoder commands to run?")
+    parser.add_argument('-t', '--template', dest='temp_name', help="Name of chapter template file with no .txt")
+    parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename.")
+    parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
+    parser.parse_args(namespace=Opts)
+    if not Opts.prefix:
+        prefix = ""
+    else:
+        prefix = Opts.prefix
+    if Opts.enc_type == "wr":
+        encode_wr(Opts.epnum, prefix, Opts.temp_name)
+    elif Opts.enc_type == "hd":
+        encode_hd(Opts.epnum, Opts.tenbit, prefix)
+    #encode_wr("41", "g", "sentai")
+    #encode_hd("41", False, "THISFILEHASNOSUBS")
