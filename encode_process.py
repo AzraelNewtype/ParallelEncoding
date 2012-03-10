@@ -170,5 +170,3 @@ if __name__ == "__main__":
         encode_wr(Opts.epnum, prefix, Opts.temp_name)
     elif Opts.enc_type == "hd":
         encode_hd(Opts.epnum, Opts.tenbit, prefix)
-    #encode_wr("41", "g", "sentai")
-    #encode_hd("41", False, "THISFILEHASNOSUBS")
