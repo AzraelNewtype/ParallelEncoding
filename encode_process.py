@@ -89,7 +89,7 @@ def get_vid_info(settings, ep_num, mode):
     os.close(a)
     avs_name = "{0}.{1}.avs".format(ep_num, mode)
     frames_cmd = '"{0}"'.format(os.path.normpath(settings["avs2yuv"]))
-    frames_cmd += '-raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
+    frames_cmd += ' -raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
 
     proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
