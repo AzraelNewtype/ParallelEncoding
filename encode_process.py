@@ -7,25 +7,8 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 import yaml
-
-#This is ugly but I felt like not using a whole mess of different globals at least
-# TODO: Split this hunk of shit into two config files: global and per-series
-g_dic = {"mkvmerge" : "C:/Program Files (x86)/MKVtoolnix/mkvmerge.exe"}
-g_dic["avs2yuv"] = "C:/enc_tools/avs2yuv.exe"
-g_dic["vfrpy"] = "C:/enc_tools/vfr/vfr.py"
-g_dic["chap_temp"] = "C:/enc_tools/"
-g_dic["series"] = "Pirate Sentai Gokaiger"
-g_dic["x264_8"] = "C:/enc_tools/x264.exe"
-g_dic["x264_10"] = "C:/enc_tools/x264-10bit.exe"
-g_dic["wr_dest"] = "C:/Dropbox/Over-Time/"
-g_dic["hd_opts"] = "--preset veryslow --tune film --crf 23.5 --keyint 240 --colormatrix bt709 --level 4.1"
-g_dic["wr_opts"] = "--profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709"
-g_dic["sd_opts"] = "--profile main --level 3 --preset veryslow --crf 25 --keyint 240 --vbv-bufsize 8000 --vbv-maxrate 8000 --partitions p8x8,b8x8,i4x4 --tune film,fastdecode --colormatrix bt709 --sar 160:159"
-g_fonts = ["C:/Users/Chris/Documents/Gokai/calibri.ttf",
-           "C:/Users/Chris/Documents/Gokai/CAS_ANTI.TTF",
-           "C:/Users/Chris/Documents/Gokai/CAS_ANTN.TTF"]
-
 
 class Opts(object):
     pass
@@ -85,27 +68,28 @@ def get_stats_name(ep_num):
             if m:
                 print(m.group(1))
 
-def cut_audio_and_make_chapters(ep_num, temp_name):
+def cut_audio_and_make_chapters(settings, ep_num, temp_name):
     aud_in = get_audiofile_name(ep_num)
-    cmd = "{0}.avs {1} -mr -i '{2}' -o {0}_aud.mka".format(ep_num, g_dic["vfrpy"], aud_in)
+    cmd = "{0}".format(settings["vfrpy"])
+    cmd += ' -mr -i "{0}" -o {1}_aud.mka'.format(aud_in, ep_num)
     if temp_name:
-        cmd += " -t {0}{1}.txt -c {2}.xml".format(g_dic['chap_temp'], temp_name, ep_num)
+        cmd += " -t {0}{1}.txt -c {2}.xml".format(settings['chapter_template_dir'], temp_name, ep_num)
+    cmd +=" {0}.avs".format(ep_num)
     split_and_blind_call(cmd)
 
-def encode_wr(ep_num, prefix, temp_name):
-    cut_audio_and_make_chapters(ep_num, temp_name)
+def encode_wr(settings, ep_num, prefix, temp_name):
+    cut_audio_and_make_chapters(settings, ep_num, temp_name)
     prepare_mode_avs(ep_num, "WR")
-    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}.WR.avs".format(g_dic["x264_8"], ep_num,
-                                                                                                                              prefix, g_dic["wr_opts"])
+    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}.WR.avs".format(settings["x264_8"], ep_num, prefix, settings["wr_opts"])
     split_and_blind_call(cmd)
-    #move_wr_bits(ep_num, prefix)
 
-def get_vid_info(ep_num, mode):
+def get_vid_info(settings, ep_num, mode):
     info = [0, 0, 0, 0]
     a, tempYUV = tempfile.mkstemp()
     os.close(a)
     avs_name = "{0}.{1}.avs".format(ep_num, mode)
-    frames_cmd = '"{0}" -raw -frames 1 "{2}" -o "{1}"'.format(os.path.normpath(avs2yuv_path), tempYUV, avs_name)
+    frames_cmd = '"{0}"'.format(os.path.normpath(settings["avs2yuv"]))
+    frames_cmd += '-raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
 
     proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
@@ -123,37 +107,35 @@ def get_vid_info(ep_num, mode):
     os.unlink(tempYUV)
     return(info)
 
-def encode_sd(ep_num, group):
+def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD")
-    out_name = "[{0}] {1} - {2}SD.mp4".format(group, g_dic["series"], ep_num)
-    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {0}.SD.avs'.format(ep_num, out_name,
-                                                                                                                         g_dic["x264_8"], g_dic["sd_opts"])
+    out_name = "[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], ep_num)
+    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {0}.SD.avs'.format(ep_num, out_name, settings["x264_8"], settings["sd_opts"])
     split_and_blind_call(cmd)
 
-def encode_hd(ep_num, tenbit, group):
+def encode_hd(settings, ep_num, tenbit, group):
     input_avs = "{0}.HD.avs".format(ep_num)
     if tenbit:
-        frame_info = get_vid_info(ep_num, "HD")
-        tenbit_flags = "--input-depth 16 --input-res {0}x{1} --fps {2} --frames {3}".format(frame_info[0], frame_info[1],
-                                                                                            frame_info[2], frame_info[3])
-        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(g_dic["avs2yuv"], input_avs, g_dic["x264_10"], tenbit_flags)
+        frame_info = get_vid_info(settings, ep_num, "HD")
+        tenbit_flags = "--input-depth 16 --input-res {0}x{1} --fps {2} --frames {3}".format(frame_info[0], frame_info[1], frame_info[2], frame_info[3])
+        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
     else:
-        encoder_source = "{0} {1}".format(g_dic["x264_8"], input_avs)
+        encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
     prepare_mode_avs(ep_num, "HD")
-    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv {3}".format(g_dic["x264_8"], ep_num, g_dic["hd_opts"], input_avs)
+    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv {3}".format(settings["x264_8"], ep_num, settings["hd_opts"], input_avs)
     split_and_blind_call(cmd)
     muxed_name = mux_hd_raw(ep_num, group)
 
 def mux_hd_raw(ep_num, group):
-    out_name = "[{0}] {1} - {2}.mkv".format(group, g_dic["series"], ep_num)
-    cmd = '"{0}" -o "{1}"  "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "--display-dimensions" "1:1280x720" "-d" "1" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_vid.mkv" "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_aud.mka" "--track-order" "0:1,1:1" "--chapters" "{2}.xml"'.format(g_dic["mkvmerge"], out_name, ep_num)
-    cmd += mux_fonts_cmd()
+    out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], ep_num)
+    cmd = '"{0}" -o "{1}"  "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "--display-dimensions" "1:1280x720" "-d" "1" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_vid.mkv" "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_aud.mka" "--track-order" "0:1,1:1" "--chapters" "{2}.xml"'.format(settings["mkvmerge"], out_name, ep_num)
+    cmd += mux_fonts_cmd(settings['fonts'])
     split_and_blind_call(cmd)
     return out_name
 
-def mux_fonts_cmd():
+def mux_fonts_cmd(fonts):
     font_switches = ""
-    for font in g_fonts:
+    for font in fonts:
         font_switches += ' --attachment-mime-type application/x-truetype-font'
         font_switches += ' --attachment-name "{0}"'.format(os.path.basename(font))
         font_switches += ' --attach-file "{0}"'.format(font)
@@ -163,15 +145,6 @@ def split_and_blind_call(cmd):
     args = shlex.split(cmd)
     #subprocess.Popen(args)
     print(' '.join(args))
-
-def move_wr_bits(ep_num, prefix):
-    wr_cmd = "copy {0}{1}wr.mp4 {2}".format(prefix, ep_num, g_dic["wr_dest"])
-    stats_in = get_stats_name(ep_num)
-    stat_rename_cmd = "move {0} {1}{2}.stats".format(stats_in, prefix, ep_num)
-    stat_out_cmd = "copy {0}{1}.stats {2}".format(prefix, ep_num, g_dic["wr_dest"])
-    split_and_blind_call(wr_cmd)
-    split_and_blind_call(stat_rename_cmd)
-    split_and_blind_call(stat_out_cmd)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
@@ -189,6 +162,11 @@ if __name__ == "__main__":
     else:
         prefix = Opts.prefix
     if Opts.enc_type == "wr":
-        encode_wr(Opts.epnum, prefix, Opts.temp_name)
+        encode_wr(settings, Opts.epnum, prefix, Opts.temp_name)
     elif Opts.enc_type == "hd":
-        encode_hd(Opts.epnum, Opts.tenbit, prefix)
+        encode_hd(settings, Opts.epnum, Opts.tenbit, prefix)
+    elif Opts.enc_type == "sd":
+        encode_sd(settings, Opts.epnum, prefix)
+    else:
+        print("You specified an invalid encode type. The options are 'wr', 'hd', or 'sd'.")
+        raise SystemExit
