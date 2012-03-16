@@ -30,6 +30,25 @@ g_fonts = ["C:/Users/Chris/Documents/Gokai/calibri.ttf",
 class Opts(object):
     pass
 
+def load_settings(series):
+    try:
+        with open('encoder.yaml') as y:
+            all_settings = yaml.load(y)
+    except IOError:
+        print("Cannot load encoder.yaml, cannot continue.")
+        raise SystemExit
+
+    settings = all_settings['Global']
+    try:
+        settings.update(all_settings['Series'][series])
+    except KeyError:
+        print('No entry for series "{0}" in encoder.yaml, the available options are:'.format(series))
+        for series in all_settings['Series']:
+            print(series)
+        raise SystemExit
+
+    return settings
+
 def prepare_mode_avs(ep_num, mode):
     basename = "{0}.joined.avs".format(ep_num)
     with open(basename) as f:
@@ -156,12 +175,15 @@ def move_wr_bits(ep_num, prefix):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
+    parser.add_argument('series', help="Series name, corresponding to series top level in encoder.yaml")
     parser.add_argument('epnum', help="Episode number to process.", type=int)
     parser.add_argument('enc_type', choices=["sd", "hd", "wr"], help="Which set of encoder commands to run?")
     parser.add_argument('-t', '--template', dest='temp_name', help="Name of chapter template file with no .txt")
-    parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename.")
+    parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename. Group tag goes here for HD/SD")
     parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
-    parser.parse_args(namespace=Opts)
+    parser.add_argument('--version', action='version', version='0.1')
+    args = parser.parse_args(namespace=Opts)
+    settings = load_settings(Opts.series)
     if not Opts.prefix:
         prefix = ""
     else:
