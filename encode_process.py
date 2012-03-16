@@ -32,7 +32,7 @@ def load_settings(series):
 
     return settings
 
-def prepare_mode_avs(ep_num, mode):
+def prepare_mode_avs(ep_num, mode, script):
     basename = "{0}.joined.avs".format(ep_num)
     with open(basename) as f:
         lines = f.readlines()
@@ -48,6 +48,8 @@ def prepare_mode_avs(ep_num, mode):
                 else:
                     line = None
             if line:
+                if not script == "":
+                    line = re.sub(r'\[\[script\]\]', script, line)
                 f.write("{0}{1}".format(line, os.linesep))
 
 def get_audiofile_name(ep_num):
@@ -79,7 +81,7 @@ def cut_audio_and_make_chapters(settings, ep_num, temp_name):
 
 def encode_wr(settings, ep_num, prefix, temp_name):
     cut_audio_and_make_chapters(settings, ep_num, temp_name)
-    prepare_mode_avs(ep_num, "WR")
+    prepare_mode_avs(ep_num, "WR", "")
     cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}.WR.avs".format(settings["x264_8"], ep_num, prefix, settings["wr_opts"])
     split_and_blind_call(cmd)
 
@@ -104,7 +106,7 @@ def get_vid_info(settings, ep_num, mode):
     raise SystemExit
 
 def encode_sd(settings, ep_num, group):
-    prepare_mode_avs(ep_num, "SD")
+    prepare_mode_avs(ep_num, "SD", settings["script"])
     out_name = "[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], ep_num)
     cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {0}.SD.avs'.format(ep_num, out_name, settings["x264_8"], settings["sd_opts"])
     split_and_blind_call(cmd)
@@ -117,7 +119,7 @@ def encode_hd(settings, ep_num, tenbit, group):
         encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
     else:
         encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
-    prepare_mode_avs(ep_num, "HD")
+    prepare_mode_avs(ep_num, "HD", "")
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv {3}".format(settings["x264_8"], ep_num, settings["hd_opts"], input_avs)
     split_and_blind_call(cmd)
     muxed_name = mux_hd_raw(ep_num, group)
@@ -151,12 +153,17 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename. Group tag goes here for HD/SD")
     parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
     parser.add_argument('--version', action='version', version='0.1')
+    parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
     if not Opts.prefix:
         prefix = ""
     else:
         prefix = Opts.prefix
+    if not Opts.script:
+        settings["script"] = ""
+    else:
+        settings["script"] = Opts.script
     if Opts.enc_type == "wr":
         encode_wr(settings, Opts.epnum, prefix, Opts.temp_name)
     elif Opts.enc_type == "hd":
