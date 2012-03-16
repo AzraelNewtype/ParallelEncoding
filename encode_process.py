@@ -94,18 +94,14 @@ def get_vid_info(settings, ep_num, mode):
     proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
     p = re.compile ('.+: ([0-9]+)x([0-9]+), ([0-9]+/[0-9]+) fps, ([0-9]+) frames')
-    result = False
     for line in proc.stdout:
         m = p.search(line)
         if m:
-            info = [m.group(1), m.group(2), m.group(3), m.group(4)]
-            result = True
-            break
-    if not result:
-        print('Error: Could not count number of frames.')
-        frame[3] = -1
+            os.unlink(tempYUV)
+            return [m.group(1), m.group(2), m.group(3), m.group(4)]
     os.unlink(tempYUV)
-    return(info)
+    print('Error: Could not count number of frames.')
+    raise SystemExit
 
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD")
