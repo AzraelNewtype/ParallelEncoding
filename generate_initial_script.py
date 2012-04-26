@@ -30,11 +30,15 @@ except IOError:
     sys.exit(1)
 
 
+print(temp_lines)
+
 with open(avs, "w") as out:
     for raw_line in temp_lines:
-        line = raw_line.rstrip()
+        line = raw_line
+        #line = raw_line.rstrip()
         if d2v_pattern.search(line):
             line = d2v_pattern.sub(d2v, line)
         if trim_pattern.search(line):
             line = add_trims(line)
-        out.write("{0}{1}".format(line,os.linesep))
+        #out.write("{0}{1}".format(line,os.linesep))
+        out.write(line)
