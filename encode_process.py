@@ -55,7 +55,7 @@ def prepare_mode_avs(ep_num, mode, script):
                     print(line)
                     print(script_loc)
                     line = 'TextSub("{0}")'.format(script_loc)
-                f.write("{0}{1}".format(line, os.linesep))
+                f.write("{0}\n".format(line))
 
 def get_audiofile_name(ep_num):
     basename = "{0}.avs".format(ep_num)
