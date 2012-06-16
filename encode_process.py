@@ -55,7 +55,7 @@ def prepare_mode_avs(ep_num, mode, script):
                     print(line)
                     print(script_loc)
                     line = 'TextSub("{0}")'.format(script_loc)
-                f.write("{0}\n".format(line))
+                f.write("{0}{1}".format(line, os.linesep))
 
 def get_audiofile_name(ep_num):
     basename = "{0}.avs".format(ep_num)
@@ -150,10 +150,13 @@ def mux_fonts_cmd(fonts):
         font_switches += ' --attach-file "{0}"'.format(font)
     return font_switches
 
-def split_and_blind_call(cmd, shell=False):
+
+def split_and_blind_call(cmd, is_python=False):
     args = shlex.split(cmd)
     print(' '.join(args))
-    f = subprocess.Popen(args, shell)
+    if is_python:
+        args.insert(0, sys.executable)
+    f = subprocess.Popen(args)
     f.wait()
 
 
