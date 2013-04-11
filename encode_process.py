@@ -138,19 +138,29 @@ def get_vid_info(settings, ep_num, mode):
 
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD", settings["script"])
-    out_name = "[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], ep_num)
-    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {0}/{0}.SD.avs'.format(ep_num, out_name, settings["x264_8"], settings["sd_opts"])
+    if settings["ver"]:
+        name_ep_num = "{0}v{1}".format(ep_num, settings["ver"])
+    else:
+        name_ep_num = ep_num
+    out_name = "out/[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], name_ep_num)
+    if os.path.exists("{0}ch.txt".format(ep_num)):
+        chaps = "--chapter {0}ch.txt".format(ep_num)
+    else:
+        chaps = ""
+    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {4} {0}/{0}.SD.avs'.format(
+        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps)
     split_and_blind_call(cmd)
 
 def encode_hd(settings, ep_num, tenbit, group):
+    prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
     if tenbit:
         frame_info = get_vid_info(settings, ep_num, "HD")
-        tenbit_flags = "--demuxer raw --input-depth 16 --input-res {0}x{1} --fps {2} --frames {3} - ".format(int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3])
+        tenbit_flags = "--demuxer raw --input-depth 16 --input-res {0}x{1} --fps {2} --frames {3} - ".format(
+            int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3])
         encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
     else:
         encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
-    prepare_mode_avs(ep_num, "HD", "")
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, settings["hd_opts"])
     bat = open('hd.bat', 'w')
     bat.write(cmd.replace('/','\\'))
@@ -195,12 +205,19 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
     parser.add_argument('--version', action='version', version='0.1')
     parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
+    parser.add_argument('-V', '--release-version', dest="ver", help="Release version numberfor use with updated encodes, primarily SD probably.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
+
+    settings["ver"] = Opts.ver
     if not Opts.prefix:
         prefix = ""
     else:
         prefix = Opts.prefix
+    if not Opts.temp_name:
+        temp_name = None
+    else:
+        temp_name = Opts.temp_name
     if Opts.epnum < 10:
         epnum = "0" + str(Opts.epnum)
     else:
@@ -210,10 +227,22 @@ if __name__ == "__main__":
     else:
         settings["script"] = Opts.script
     if Opts.enc_type == "wr":
-        encode_wr(settings, epnum, prefix, Opts.temp_name)
+        if settings["default_template"] and not temp_name:
+            temp_name = settings["default_template"]
+        if not Opts.prefix and settings["wr_prefix"]:
+            prefix = settings["wr_prefix"]
+        encode_wr(settings, epnum, prefix, temp_name)
     elif Opts.enc_type == "hd":
-        encode_hd(settings, epnum, Opts.tenbit, prefix)
+        if settings["hd_hi10p"] or Opts.tenbit:
+            tenbit = True
+        else:
+            tenbit = False
+        if not Opts.prefix and settings["hd_prefix"]:
+            prefix = settings["hd_prefix"]
+        encode_hd(settings, epnum, tenbit, prefix)
     elif Opts.enc_type == "sd":
+        if not Opts.prefix and settings["sd_prefix"]:
+            prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
     else:
         print("You specified an invalid encode type. The options are 'wr', 'hd', or 'sd'.")
