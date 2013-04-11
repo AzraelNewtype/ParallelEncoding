@@ -172,7 +172,12 @@ def encode_hd(settings, ep_num, tenbit, group):
 
 def mux_hd_raw(ep_num, group):
     out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], ep_num)
-    cmd = '"{0}" -o "{1}"  "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "--display-dimensions" "1:1280x720" "-d" "1" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_vid.mkv" "--language" "1:jpn" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{2}_aud.mka" "--track-order" "0:1,1:1" "--chapters" "{2}.xml"'.format(settings["mkvmerge"], out_name, ep_num)
+# the first track has been 0 for a while now, so let's use that instead of requiring old versions
+    cmd = '"{0}" -o "out/{1}"  "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no"'.format(settings["mkvmerge"], out_name)
+# Add in tags
+    if os.path.exists("{0}tags.xml".format(ep_num)):
+        cmd += ' "--tags" "0:{0}tags.xml"'.format(ep_num)
+    cmd += ' "--display-dimensions" "0:1280x720" "-d" "0" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_vid.mkv" "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no" "-a" "0" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_aud.mka" "--track-order" "0:0,1:0" "--chapters" "{0}.xml"'.format(ep_num)
     cmd += mux_fonts_cmd(settings['fonts'])
     split_and_blind_call(cmd)
     return out_name
