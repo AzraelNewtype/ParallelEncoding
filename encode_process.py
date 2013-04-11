@@ -80,19 +80,39 @@ def get_stats_name(ep_num):
             if m:
                 print(m.group(1))
 
-def cut_audio_and_make_chapters(settings, ep_num, temp_name):
+def cut_audio(settings, ep_num):
     aud_in = get_audiofile_name(ep_num)
-    cmd = "{0}".format(settings["vfrpy"])
+    if settings["vfrpy"]:
+        cmd = settings["vfrpy"]
+    elif settings["splitaud"]:
+        cmd = settings["splitaud"]
+    else:
+        print("You don't have an audio cutter path defined in encoder.yaml, give the path to vfr.py or split_aud.pl")
+        raise SystemExit
     cmd += ' -mr -i "{0}" -o {1}_aud.mka'.format(aud_in, ep_num)
-    if temp_name:
+    cmd +=" {0}.avs".format(ep_num)
+    split_and_blind_call(cmd, True)
+
+
+def make_chapters(settings, ep_num, temp_name, mp4):
+    cmd = "{0}".format(settings["vfrpy"])
+    if mp4:
+        cmd += " -n {0}{1}-names.txt -c {2}ch.txt".format(settings['chapter_template_dir'], temp_name, ep_num)
+    else:
         cmd += " -t {0}{1}.txt -c {2}.xml".format(settings['chapter_template_dir'], temp_name, ep_num)
     cmd +=" {0}.avs".format(ep_num)
     split_and_blind_call(cmd, True)
 
 def encode_wr(settings, ep_num, prefix, temp_name):
-    cut_audio_and_make_chapters(settings, ep_num, temp_name)
+    cut_audio(settings, ep_num)
+    print(temp_name)
+    if temp_name:
+        make_chapters(settings, ep_num, temp_name, False)
+        if settings["mp4chapters"]:
+            make_chapters(settings, ep_num, temp_name, True)
     prepare_mode_avs(ep_num, "WR", "")
-    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}/{1}.WR.avs".format(settings["x264_8"], ep_num, prefix, settings["wr_opts"])
+    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}/{1}.WR.avs".format(
+        settings["x264_8"], ep_num, prefix, settings["wr_opts"])
     split_and_blind_call(cmd)
 
 def get_vid_info(settings, ep_num, mode):
