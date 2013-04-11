@@ -3,4 +3,4 @@ LoadPlugin("C:\avsfilters\ffms2.dll")
 [[lossless]]
 #spline64resize(848,480) # [SD][WR]
 #scxvid("out.stats") # [WR]
-#TextSub("[[OutDir]]") # [SD]
+#TextSub("[[OutDir]][[script]]") # [SD]
