@@ -8,7 +8,12 @@ import shlex
 import subprocess
 import sys
 import tempfile
-import yaml
+
+try:
+    import yaml
+except ImportError:
+    print("You need to install PyYaml for this to work.")
+    raise SystemExit
 
 class Opts(object):
     pass
