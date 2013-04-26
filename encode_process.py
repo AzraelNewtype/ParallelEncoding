@@ -206,7 +206,9 @@ if __name__ == "__main__":
     parser.add_argument('enc_type', choices=["sd", "hd", "wr", "fhd"], help="Which set of encoder commands to run?")
     parser.add_argument('-t', '--template', dest='temp_name', help="Name of chapter template file with no .txt")
     parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename. Group tag goes here for HD/SD")
-    parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
+    #parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
+    parser.add_argument('-d', '--source-depth', dest='source_depth', type=int, choices=[8,10,16], help="Bitdepth of avs.")
+    parser.add_argument('-D', '--encode-depth', dest='enc_depth', type=int, choices=[8,10], help="Use standard x264 or x264-10bit?")
     parser.add_argument('--version', action='version', version='0.1')
     parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
     parser.add_argument('-V', '--release-version', dest="ver", help="Release version number for use with updated encodes, primarily SD probably.")
@@ -237,10 +239,12 @@ if __name__ == "__main__":
             prefix = settings["wr_prefix"]
         encode_wr(settings, epnum, prefix, temp_name)
     elif Opts.enc_type == "hd":
-        if settings["hd_hi10p"] or Opts.tenbit:
+        if settings["hd_hi10p"] or Opts.enc_depth == 10:
             tenbit = True
+            out_depth = 10
         else:
             tenbit = False
+            out_depth = 8
         if not Opts.prefix and settings["hd_prefix"]:
             prefix = settings["hd_prefix"]
         encode_hd(settings, epnum, tenbit, prefix)
