@@ -104,7 +104,6 @@ def make_chapters(settings, ep_num, temp_name, mp4):
 
 def encode_wr(settings, ep_num, prefix, temp_name):
     cut_audio(settings, ep_num)
-    print(temp_name)
     if temp_name:
         make_chapters(settings, ep_num, temp_name, False)
         if settings["mp4chapters"]:
@@ -122,7 +121,6 @@ def get_vid_info(settings, ep_num, mode):
     frames_cmd = '"{0}"'.format(os.path.normpath(settings["avs2yuv"]))
     frames_cmd += ' -raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
 
-    print(frames_cmd)
     proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
     proc.wait()
     p = re.compile ('.+: ([0-9]+)x([0-9]+), ([0-9]+/[0-9]+) fps, ([0-9]+) frames')
@@ -192,7 +190,6 @@ def mux_fonts_cmd(fonts):
 
 def split_and_blind_call(cmd, is_python=False):
     args = shlex.split(cmd)
-    print(' '.join(args))
     if is_python:
         args.insert(0, sys.executable)
     f = subprocess.Popen(args)
