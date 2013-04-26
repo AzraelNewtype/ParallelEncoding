@@ -57,8 +57,6 @@ def prepare_mode_avs(ep_num, mode, script):
             if line:
                 if not script == "" and re.search(r'\[\[script\]\]', line):
                     script_loc = os.path.abspath(script)
-                    print(line)
-                    print(script_loc)
                     line = 'TextSub("{0}")'.format(script_loc)
                 f.write("{0}{1}".format(line, os.linesep))
 
