@@ -204,13 +204,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
     parser.add_argument('series', help="Series name, corresponding to series top level in encoder.yaml")
     parser.add_argument('epnum', help="Episode number to process.", type=int)
-    parser.add_argument('enc_type', choices=["sd", "hd", "wr"], help="Which set of encoder commands to run?")
+    parser.add_argument('enc_type', choices=["sd", "hd", "wr", "fhd"], help="Which set of encoder commands to run?")
     parser.add_argument('-t', '--template', dest='temp_name', help="Name of chapter template file with no .txt")
     parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename. Group tag goes here for HD/SD")
     parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
     parser.add_argument('--version', action='version', version='0.1')
     parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
-    parser.add_argument('-V', '--release-version', dest="ver", help="Release version numberfor use with updated encodes, primarily SD probably.")
+    parser.add_argument('-V', '--release-version', dest="ver", help="Release version number for use with updated encodes, primarily SD probably.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
 
@@ -249,6 +249,9 @@ if __name__ == "__main__":
         if not Opts.prefix and settings["sd_prefix"]:
             prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
+    elif Opts.enc_type == "fhd":
+        print "Congratulations, you've specified a valid mode with no corresponding code."
+        raise SystemExit
     else:
-        print("You specified an invalid encode type. The options are 'wr', 'hd', or 'sd'.")
+        print("You specified an invalid encode type. The options are 'wr', 'hd', 'fhd', or 'sd'.")
         raise SystemExit
