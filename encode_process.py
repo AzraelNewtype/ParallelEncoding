@@ -70,6 +70,7 @@ def get_audiofile_name(ep_num):
                 if len(aacs) > 0:
                     return aacs[0]
 
+# Why was this even implemented?
 def get_stats_name(ep_num):
     basename = "{0}.WR.avs".format(ep_num)
     with open(basename) as f:
@@ -248,7 +249,7 @@ if __name__ == "__main__":
             prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
     elif Opts.enc_type == "fhd":
-        print "Congratulations, you've specified a valid mode with no corresponding code."
+        print("Congratulations, you've specified a valid mode with no corresponding code.")
         raise SystemExit
     else:
         print("You specified an invalid encode type. The options are 'wr', 'hd', 'fhd', or 'sd'.")
