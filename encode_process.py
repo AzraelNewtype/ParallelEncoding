@@ -130,8 +130,7 @@ def get_vid_info(settings, ep_num, mode):
             os.unlink(tempYUV)
             return [m.group(1), m.group(2), m.group(3), m.group(4)]
     os.unlink(tempYUV)
-    print('Error: Could not count number of frames.')
-    raise SystemExit
+    die('Error: Could not count number of frames.')
 
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD", settings["script"])
@@ -196,6 +195,10 @@ def split_and_blind_call(cmd, is_python=False):
     f.wait()
 
 
+def die(msg="The programmer neglected to explain why he's crashing the program here."):
+    print(msg)
+    raise SystemExit
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
     parser.add_argument('series', help="Series name, corresponding to series top level in encoder.yaml")
@@ -250,8 +253,6 @@ if __name__ == "__main__":
             prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
     elif Opts.enc_type == "fhd":
-        print("Congratulations, you've specified a valid mode with no corresponding code.")
-        raise SystemExit
+        die("Congratulations, you've specified a valid mode with no corresponding code.")
     else:
-        print("You specified an invalid encode type. The options are 'wr', 'hd', 'fhd', or 'sd'.")
-        raise SystemExit
+        die("You specified an invalid encode type. The options are 'wr', 'hd', 'fhd', or 'sd'.")
