@@ -11,8 +11,9 @@ Series:
     gobus:
         default_template: sentai
         mp4chapters: true
-        hd_hi10p: true
-        avs_depth: 16
+        source_depth: 16
+        hd_depth: 10
+        sd_depth: 8
         wr_prefix: gb
         hd_prefix: THISFILEHASNOSUBS
         sd_prefix: Over-Time

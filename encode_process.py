@@ -147,13 +147,13 @@ def encode_sd(settings, ep_num, group):
         ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps)
     split_and_blind_call(cmd)
 
-def encode_hd(settings, ep_num, tenbit, group):
+def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
-    if tenbit:
+    if settings['source_depth'] > 9:
         frame_info = get_vid_info(settings, ep_num, "HD")
-        tenbit_flags = "--demuxer raw --input-depth 16 --input-res {0}x{1} --fps {2} --frames {3} - ".format(
-            int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3])
+        tenbit_flags = "--demuxer raw --input-depth {4} --input-res {0}x{1} --fps {2} --frames {3} - ".format(
+            int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3], settings['source_depth'])
         encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
     else:
         encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
@@ -199,6 +199,15 @@ def die(msg="The programmer neglected to explain why he's crashing the program h
     print(msg)
     raise SystemExit
 
+def depth_checks(key, label, option, settings, opts):
+    if key not in settings:
+        settings[key] = None
+    if not opts[key] and not settings[key]:
+        die("Your configuration file doesn't include a {0} depth, and you failed to specify one [use {1}]".format(label,option))
+    elif opts[key]:
+        settings[key] = opts[key]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
     parser.add_argument('series', help="Series name, corresponding to series top level in encoder.yaml")
@@ -214,6 +223,9 @@ if __name__ == "__main__":
     parser.add_argument('-V', '--release-version', dest="ver", help="Release version number for use with updated encodes, primarily SD probably.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
+    Opts.hd_depth = Opts.enc_depth
+    Opts.sd_depth = Opts.enc_depth
+    dOpts = vars(Opts)
 
     settings["ver"] = Opts.ver
     if not Opts.prefix:
@@ -232,6 +244,7 @@ if __name__ == "__main__":
         settings["script"] = ""
     else:
         settings["script"] = Opts.script
+    depth_checks("source_depth", "source", "-d {8,10,16}", settings, dOpts)
     if Opts.enc_type == "wr":
         if settings["default_template"] and not temp_name:
             temp_name = settings["default_template"]
@@ -239,16 +252,12 @@ if __name__ == "__main__":
             prefix = settings["wr_prefix"]
         encode_wr(settings, epnum, prefix, temp_name)
     elif Opts.enc_type == "hd":
-        if settings["hd_hi10p"] or Opts.enc_depth == 10:
-            tenbit = True
-            out_depth = 10
-        else:
-            tenbit = False
-            out_depth = 8
+        depth_checks("hd_depth", "HD", "-D {8,10}", settings, dOpts)
         if not Opts.prefix and settings["hd_prefix"]:
             prefix = settings["hd_prefix"]
-        encode_hd(settings, epnum, tenbit, prefix)
+        encode_hd(settings, epnum, prefix)
     elif Opts.enc_type == "sd":
+        depth_checks("sd_depth", "SD", "-D {8,10}", settings, dOpts)
         if not Opts.prefix and settings["sd_prefix"]:
             prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
