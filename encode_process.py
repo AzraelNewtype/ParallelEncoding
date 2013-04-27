@@ -150,13 +150,17 @@ def encode_sd(settings, ep_num, group):
 def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
+    if settings['hd_depth'] == 10:
+        enc = settings["x264_10"]
+    else
+        enc = settings["x264_8"]
     if settings['source_depth'] > 9:
         frame_info = get_vid_info(settings, ep_num, "HD")
         tenbit_flags = "--demuxer raw --input-depth {4} --input-res {0}x{1} --fps {2} --frames {3} - ".format(
             int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3], settings['source_depth'])
-        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
+        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, enc, tenbit_flags)
     else:
-        encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
+        encoder_source = "{0} {1}".format(enc, input_avs)
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, settings["hd_opts"])
     bat = open('hd.bat', 'w')
     bat.write(cmd.replace('/','\\'))
