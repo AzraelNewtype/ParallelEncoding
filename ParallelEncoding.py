@@ -79,7 +79,7 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, enc_depth)
             new_path = script_out_path[0:-1].replace('\\','/')
             line = script_out_pattern.sub(new_path + '/', line)
             line = line.replace('/', '\\')
-        joined_avs.write("{0}{1}".format(line,os.linesep))
+        joined_avs.write("{0}\n".format(line))
 
 def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
     for thread in range(1, total_threads + 1):
