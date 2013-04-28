@@ -24,14 +24,22 @@ def read_config():
     """ Read encoder.yaml and fill the values into the globals, so they don't
         need to be in the script.
     """
+    script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    yaml_loc = "{0}{1}encoder.yaml".format(script_dir,os.sep)
     try:
-        with open("encoder.yaml") as yaml_in:
+        with open(yaml_loc) as yaml_in:
             config = yaml.load(yaml_in)
     except IOError:
         print("You seem to be missing the config file, encoder.yaml")
         print("Cannot continue without it.")
         raise SystemExit
 
+# Yes, yes, I get it, globals are evil and Python makes you work hard to do them
+# but come the fuck on, this used to be a MS bat.
+    global avs2yuv_path
+    global x264_8_path
+    global x264_10_path
+    global x264_extra_params
     avs2yuv_path = config['Global']['avs2yuv']
     x264_8_path = config['Global']['x264_8']
     x264_10_path = config['Global']['x264_10']
@@ -68,12 +76,17 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
             write_lossless_lines(joined_avs, lossless, total_threads, tenbit)
             line = ""
         if script_out_pattern.search(line):
-            line = script_out_pattern.sub(script_out_path,line)
-        joined_avs.write("{0}{1}".format(line,os.linesep))
+            new_path = script_out_path[0:-1].replace('\\','/')
+            line = script_out_pattern.sub(new_path + '/', line)
+            line = line.replace('/', '\\')
+        joined_avs.write("{0}\n".format(line))
 
 def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
     for thread in range(1, total_threads + 1):
-        write_source_line(joined_avs, lossless, thread, tenbit)
+        # Using the new one here because I haven't gotten this function to care about config yet
+        write_sapikachu_source_line(joined_avs, lossless, thread, tenbit)
+        # Old version for TheFluff's initial hacked ffms2
+        #write_source_line(joined_avs, lossless, thread, tenbit)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads):
@@ -82,6 +95,15 @@ def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
         else:
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
+
+
+def write_sapikachu_source_line(avs, lossless, num, tenbit):
+    lossless_out = lossless.replace('[NUM]', str(num))
+    if tenbit:
+        hack = "true"
+    else:
+        hack = "false"
+    avs.write('tmp = FFVideoSource("{0}",enable10bithack={1},track=-1)\n'.format(lossless_out, hack))
 
 def write_source_line(avs, lossless, num, tenbit):
     lossless_out = lossless.replace('[NUM]', str(num))
@@ -142,8 +164,8 @@ if (options.threads < 2):
 total_threads = options.threads
 avs_mem = options.AVS_Mem_Per_Thread
 
-if len(args) < 1:
-    print('No input file given. Use -h or --help for usage.')
+if len(args) < 2:
+    print('You have not specified both a source avs and a template. Use -h or --help for usage details.')
     raise SystemExit
 
 # Looping for multiple input is kinda stupid, loop elsewhere if you want multiple input
@@ -155,6 +177,7 @@ if(not os.path.exists(infile) or not os.path.isfile(infile) or ext.lower().find(
     raise SystemExit
 
 joined_template = args[1]
+
 if(not os.path.exists(joined_template) or not os.path.isfile(joined_template)):
     print('Given output template does not exist.')
     raise SystemExit
@@ -168,6 +191,9 @@ final_avs = script_out_path + proj_name + '.joined.avs'
 lossless_path = script_out_path + 'Lossless' + os.sep
 split_output = lossless_path + proj_name + '.[NUM].mkv'
 tenbit = options.tenbit
+
+print("Attempting to read config.")
+read_config()
 
 # remove old scripts and files before script is run
 if os.path.isdir(script_out_path):
@@ -227,7 +253,7 @@ for thread in range(1, total_threads + 1):
         new_cmd = new_cmd.replace('[frames]', split_script_frames[thread-1][3])
     if(options.usewine):
         new_cmd = 'wine ' + new_cmd
-    print(new_cmd + '\n')
+    print(new_cmd)
     proc[thread-1] = subprocess.Popen(new_cmd,shell=True)
 
 for thread in range(total_threads):
