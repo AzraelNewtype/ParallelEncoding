@@ -83,7 +83,10 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, enc_depth)
 
 def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
     for thread in range(1, total_threads + 1):
-        write_source_line(joined_avs, lossless, thread, enc_depth)
+        # Using the new one here because I haven't gotten this function to care about config yet
+        write_sapikachu_source_line(joined_avs, lossless, thread, enc_depth)
+        # Old version for TheFluff's initial hacked ffms2
+        #write_source_line(joined_avs, lossless, thread, enc_depth)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads):
@@ -92,6 +95,15 @@ def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
         else:
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
+
+
+def write_sapikachu_source_line(avs, lossless, num, enc_depth):
+    lossless_out = lossless.replace('[NUM]', str(num))
+    if enc_depth == 10:
+        hack = "true"
+    else:
+        hack = "false"
+    avs.write('tmp = FFVideoSource("{0}",enable10bithack={1},track=-1)\n'.format(lossless_out, hack))
 
 def write_source_line(avs, lossless, num, enc_depth):
     lossless_out = lossless.replace('[NUM]', str(num))
@@ -154,8 +166,8 @@ if (options.threads < 2):
 total_threads = options.threads
 avs_mem = options.AVS_Mem_Per_Thread
 
-if len(args) < 1:
-    print('No input file given. Use -h or --help for usage.')
+if len(args) < 2:
+    print('You have not specified both a source avs and a template. Use -h or --help for usage details.')
     raise SystemExit
 
 # Looping for multiple input is kinda stupid, loop elsewhere if you want multiple input
