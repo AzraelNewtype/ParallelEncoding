@@ -44,8 +44,7 @@ Series:
             --profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 
             --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709
         sd_opts: >
-            --profile main --level 3 --preset veryslow --crf 23 --keyint 240 --vbv-bufsize 8000 
-            --vbv-maxrate 8000 --partitions p8x8,b8x8,i8x8,i4x4 --tune film,fastdecode --colormatrix bt470bg 
+           
         fonts: 
             - C:/Users/Chris/Documents/Gokai/calibri.ttf
             - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/Eurosti.TTF

@@ -13,10 +13,9 @@ files from a given avs. Expanded to work with TheFluff's hacked ffms2 for 10bit
 lossless capabilities.
 
 The format of the output template is similar to the initial output template.
-[[lossless]] triggers the output of the lossless source lines, and [[OutDir]]
-inserts the path of the output folder into a line, primarily useful for TextSub,
-which needs a full absolute path. The rest of the file should be whatever you use
-to encode your final versions.
+[[lossless]] triggers the output of the lossless source lines, and [[script]]
+is used by the next step, but should be included in this template to avoid
+ever needing to manually edit these files.
 
 Usage: ParallelEncoding.py [options] input.avs output_template
 
@@ -30,3 +29,36 @@ Options:
   -n, --no-avs2yuv      Do not use avs2yuv. Strange default action requires
                         explicitly turning off.
   -d, --tenbit          Turns on hi10p mode. [default=False]
+
+encode_process.py is a tool for automating the finalization process of the output
+of ParallelEncoding.py for work raws, HD premuxes, and SD hardsubs. The [HD], [SD]
+and [WR] tags in comments on lines in the out template are used for this, filtering
+through only relevant lines to the particular encode type.
+
+[[script]] lines from the template above are replaced by TextSub() calls, with the
+absolute path to the script parameter inserted.
+
+usage: encode_process.py [-h] [-t TEMP_NAME] [-p PREFIX] [-d] [--version]
+                         [-s SCRIPT]
+                         series epnum {sd,hd,wr}
+
+Commands to automate the crap out of encoding
+
+positional arguments:
+  series                Series name, corresponding to series top level in
+                        encoder.yaml
+  epnum                 Episode number to process.
+  {sd,hd,wr}            Which set of encoder commands to run?
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TEMP_NAME, --template TEMP_NAME
+                        Name of chapter template file with no .txt
+  -p PREFIX, --prefix PREFIX
+                        Prefix to attach to output filename. Group tag goes
+                        here for HD/SD
+  -d, --tenbit          Use 10bit encoder.
+  --version             show program's version number and exit
+  -s SCRIPT, --script SCRIPT
+                        Filename of ass script. Replaces [[script]] in out
+                        template.
