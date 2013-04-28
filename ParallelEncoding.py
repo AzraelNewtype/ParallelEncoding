@@ -57,7 +57,7 @@ def generate_parallel_avs(avs_out, main_avs, avs_mem, total_threads, thread_num)
         parallel_avs.write('end = start + (FrameCount() / {0}) + 100\n'.format(total_threads))
     parallel_avs.write('Trim(start,end)\n')
 
-def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
+def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, enc_depth):
     """ generate_joined_avs joins lossless files from parallel encoding, adding
         to a user given template file for easy alteration of final encode handling.
     """
@@ -73,7 +73,7 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
     for raw_ln in temp_lines:
         line = raw_ln.rstrip()
         if lossless_pattern.search(line):
-            write_lossless_lines(joined_avs, lossless, total_threads, tenbit)
+            write_lossless_lines(joined_avs, lossless, total_threads, enc_depth)
             line = ""
         if script_out_pattern.search(line):
             new_path = script_out_path[0:-1].replace('\\','/')
@@ -81,9 +81,9 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
             line = line.replace('/', '\\')
         joined_avs.write("{0}{1}".format(line,os.linesep))
 
-def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
+def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
     for thread in range(1, total_threads + 1):
-        write_source_line(joined_avs, lossless, thread, tenbit)
+        write_source_line(joined_avs, lossless, thread, enc_depth)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads):
@@ -93,9 +93,9 @@ def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
 
-def write_source_line(avs, lossless, num, tenbit):
+def write_source_line(avs, lossless, num, enc_depth):
     lossless_out = lossless.replace('[NUM]', str(num))
-    if tenbit:
+    if enc_depth == 10:
         colorspace = 'YV12_10-bit_hack'
     else:
         colorspace = 'YV12'
@@ -229,7 +229,7 @@ cmd_output = '"[output]"'
 if(options.useavs2yuv):
     enc_cmd = enc_cmd + '"' + os.path.normpath(avs2yuv_path) + '" -raw ' + cmd_input + ' -o - | '
     if(int(split_script_frames[0][3]) > -1):
-        if(tenbit):
+        if(source_depth > 8):
             width = str(int(split_script_frames[0][0])//2)
         else:
             width = split_script_frames[0][0]
@@ -259,4 +259,4 @@ print('Generating joined script.')
 if(options.usewine):
     split_output = 'Z:' + split_output.replace('/','\\')
 
-generate_joined_avs(final_avs, split_output, avs_mem, total_threads, tenbit)
+generate_joined_avs(final_avs, split_output, avs_mem, total_threads, enc_depth)
