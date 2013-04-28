@@ -138,8 +138,10 @@ parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=F
                   help="Encoding on linux, so use wine")
 parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
                   help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
-parser.add_option('-d', '--tenbit', action='store_true', dest='tenbit', default=False,
-                  help="Turns on hi10p mode. [default=False]")
+parser.add_argument('-d', '--source-depth', dest='source_depth', type=int, choices=[8,10,16],
+                    help="Bitdepth of avs.")
+parser.add_argument('-D', '--encode-depth', dest='enc_depth', type=int, choices=[8,10],
+                    help="Use standard x264 or x264-10bit?")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
@@ -177,7 +179,8 @@ split_script = script_out_path + proj_name + '.[NUM].avs'
 final_avs = script_out_path + proj_name + '.joined.avs'
 lossless_path = script_out_path + 'Lossless' + os.sep
 split_output = lossless_path + proj_name + '.[NUM].mkv'
-tenbit = options.tenbit
+source_depth = options.source_depth
+enc_depth = options.enc_depth
 
 print("Attempting to read config.")
 read_config()
@@ -210,8 +213,11 @@ if(options.useavs2yuv):
     for thread in range(total_threads):
         proc[thread].wait()
 
-if tenbit:
-    x264_extra_params += ' --input-depth 16'
+
+if source_depth > 8:
+    x264_extra_params += ' --input-depth {0}'.format(source_depth)
+
+if enc_depth == 10:
     x264_path = x264_10_path
 else:
     x264_path = x264_8_path
