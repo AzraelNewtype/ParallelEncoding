@@ -152,7 +152,7 @@ def encode_hd(settings, ep_num, group):
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
     if settings['hd_depth'] == 10:
         enc = settings["x264_10"]
-    else
+    else:
         enc = settings["x264_8"]
     if settings['source_depth'] > 9:
         frame_info = get_vid_info(settings, ep_num, "HD")
