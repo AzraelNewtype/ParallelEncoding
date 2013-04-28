@@ -28,7 +28,11 @@ Options:
   -w, --wine            Encoding on linux, so use wine
   -n, --no-avs2yuv      Do not use avs2yuv. Strange default action requires
                         explicitly turning off.
-  -d, --tenbit          Turns on hi10p mode. [default=False]
+  -d SOURCE_DEPTH, --source-depth=SOURCE_DEPTH
+                        Bitdepth of avs. Must be 8, 10, or 16, default=8
+  -D ENC_DEPTH, --encode-depth=ENC_DEPTH
+                        Use standard x264 or x264-10bit? Enter 8 or 10,
+                        default=8
 
 encode_process.py is a tool for automating the finalization process of the output
 of ParallelEncoding.py for work raws, HD premuxes, and SD hardsubs. The [HD], [SD]
@@ -38,9 +42,9 @@ through only relevant lines to the particular encode type.
 [[script]] lines from the template above are replaced by TextSub() calls, with the
 absolute path to the script parameter inserted.
 
-usage: encode_process.py [-h] [-t TEMP_NAME] [-p PREFIX] [-d] [--version]
-                         [-s SCRIPT]
-                         series epnum {sd,hd,wr}
+usage: encode_process.py [-h] [-t TEMP_NAME] [-p PREFIX] [-d {8,10,16}]
+                         [-D {8,10}] [--version] [-s SCRIPT] [-V VER]
+                         series epnum {sd,hd,wr,fhd}
 
 Commands to automate the crap out of encoding
 
@@ -48,7 +52,7 @@ positional arguments:
   series                Series name, corresponding to series top level in
                         encoder.yaml
   epnum                 Episode number to process.
-  {sd,hd,wr}            Which set of encoder commands to run?
+  {sd,hd,wr,fhd}        Which set of encoder commands to run?
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -57,8 +61,14 @@ optional arguments:
   -p PREFIX, --prefix PREFIX
                         Prefix to attach to output filename. Group tag goes
                         here for HD/SD
-  -d, --tenbit          Use 10bit encoder.
+  -d {8,10,16}, --source-depth {8,10,16}
+                        Bitdepth of avs.
+  -D {8,10}, --encode-depth {8,10}
+                        Use standard x264 or x264-10bit?
   --version             show program's version number and exit
   -s SCRIPT, --script SCRIPT
                         Filename of ass script. Replaces [[script]] in out
                         template.
+  -V VER, --release-version VER
+                        Release version number for use with updated encodes,
+                        primarily SD probably.
