@@ -9,7 +9,7 @@ Usage: ./generate_initial_script.py template d2v epnum
 
 
 ParallelEncoding.py is a tool for encoding multiple segmented lossless h.264 
-files from a given avs. Expanded to work with TheFluff's hacked ffms2 for 10bit
+files from a given avs. Expanded to work with sapikachu's hacked ffms2 for 10bit
 lossless capabilities.
 
 The format of the output template is similar to the initial output template.
