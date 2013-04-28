@@ -150,10 +150,10 @@ parser.add_option('-w', '--wine', action='store_true', dest='usewine', default=F
                   help="Encoding on linux, so use wine")
 parser.add_option('-n', '--no-avs2yuv', action='store_false', dest='useavs2yuv', default=True,
                   help="Do not use avs2yuv. Strange default action requires explicitly turning off.")
-parser.add_argument('-d', '--source-depth', dest='source_depth', type=int, choices=[8,10,16],
-                    help="Bitdepth of avs.")
-parser.add_argument('-D', '--encode-depth', dest='enc_depth', type=int, choices=[8,10],
-                    help="Use standard x264 or x264-10bit?")
+parser.add_option('-d', '--source-depth', dest='source_depth', type=int, default=8,
+                    help="Bitdepth of avs. Must be 8, 10, or 16, default=8")
+parser.add_option('-D', '--encode-depth', dest='enc_depth', type=int, default=8,
+                    help="Use standard x264 or x264-10bit? Enter 8 or 10, default=8")
 (options, args) = parser.parse_args()
 
 if(options.usewine):
@@ -165,6 +165,18 @@ if (options.threads < 2):
 
 total_threads = options.threads
 avs_mem = options.AVS_Mem_Per_Thread
+
+if options.source_depth in [8,10,16]:
+    source_depth = options.source_depth
+else:
+    print("You've supplied an invalid source depth. Please use 8, 10, or 16.")
+    raise SystemExit
+
+if options.enc_depth in [8,10]:
+    enc_depth = options.enc_depth
+else:
+    print("You've supplied an invalid encode depth. Please use 8 or 10.")
+    raise SystemExit
 
 if len(args) < 2:
     print('You have not specified both a source avs and a template. Use -h or --help for usage details.')
@@ -191,7 +203,6 @@ split_script = script_out_path + proj_name + '.[NUM].avs'
 final_avs = script_out_path + proj_name + '.joined.avs'
 lossless_path = script_out_path + 'Lossless' + os.sep
 split_output = lossless_path + proj_name + '.[NUM].mkv'
-source_depth = options.source_depth
 enc_depth = options.enc_depth
 
 print("Attempting to read config.")
