@@ -98,14 +98,7 @@ def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
 
 
 def write_sapikachu_source_line(avs, lossless, num, enc_depth):
-    lossless_out = lossless.replace('[NUM]', str(num))
-    if tenbit:
-        hack = "true"
-    else:
-        hack = "false"
-    avs.write('tmp = FFVideoSource("{0}",enable10bithack={1},track=-1)\n'.format(lossless_out, hack))
-
-def write_source_line(avs, lossless, num, tenbit):
+    """Writes the source line the way the modern hacks do it."""
     lossless_out = lossless.replace('[NUM]', str(num))
     if enc_depth == 10:
         hack = "true"
@@ -114,6 +107,7 @@ def write_source_line(avs, lossless, num, tenbit):
     avs.write('tmp = FFVideoSource("{0}",enable10bithack={1},track=-1)\n'.format(lossless_out, hack))
 
 def write_source_line(avs, lossless, num, enc_depth):
+    """Writes the source line as used by TheFluff's old patched ffms2.dll instead of how the modern hacks do it."""
     lossless_out = lossless.replace('[NUM]', str(num))
     if enc_depth == 10:
         colorspace = 'YV12_10-bit_hack'
