@@ -66,7 +66,7 @@ def get_audiofile_name(ep_num):
     basename = "{0}.avs".format(ep_num)
     with open(basename) as f:
         for line in f:
-            m = re.search(r"source\(\"(.+)\"\)", line)
+            m = re.search(r"source\(\"(.+)?\"(,.+)*?\)", line)
             if m:
                 aacs = glob.glob("{0}*.aac".format(os.path.splitext(m.group(1))[0]))
                 if len(aacs) > 0:
@@ -111,8 +111,15 @@ def encode_wr(settings, ep_num, prefix, temp_name):
         if settings["mp4chapters"]:
             make_chapters(settings, ep_num, temp_name, True)
     prepare_mode_avs(ep_num, "WR", "")
-    cmd = "{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile {1}_aud.mka -o {2}{1}wr.mp4 {1}/{1}.WR.avs".format(
-        settings["x264_8"], ep_num, prefix, settings["wr_opts"])
+    try:
+        tc_str = "--tcfile-in {0}".format(settings["tc"])
+    except KeyError:
+        tc_str = ""
+    cmd = ("{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile "
+          "{1}_aud.mka -o {2}{1}wr.mkv {1}/{1}.WR.avs {4} --chapter "
+          "{1}.xml".
+          format(settings["x264_8"], ep_num, prefix, settings["wr_opts"], 
+                 tc_str))
     split_and_blind_call(cmd)
 
 def get_vid_info(settings, ep_num, mode):
@@ -147,37 +154,50 @@ def encode_sd(settings, ep_num, group):
         chaps = "--chapter {0}ch.txt".format(ep_num)
     else:
         chaps = ""
-    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {4} {0}/{0}.SD.avs'.format(
-        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps)
+    try:
+        tc_str = " --tcfile-in {0}".format(settings["tc"])
+    except KeyError:
+        tc_str = ""
+    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {4}{5} {0}/{0}.SD.avs'.format(
+        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str)
     split_and_blind_call(cmd)
 
 def encode_hd(settings, ep_num, tenbit, group):
     prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
+    hd_opts = settings["hd_opts"].rstrip()
     if tenbit:
         frame_info = get_vid_info(settings, ep_num, "HD")
-        tenbit_flags = "--demuxer raw --input-depth 16 --input-res {0}x{1} --fps {2} --frames {3} - ".format(
-            int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3])
-        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags)
+        width = int(frame_info[0])//2 
+        fps = eval(frame_info[2])
+        try:
+            fps_str = "--tcfile-in {0}".format(settings["tc"])
+        except KeyError:
+            fps_str = "--fps {0}".format(fps)
+        res = "{0}x{1}".format(width, frame_info[1])
+        tenbit_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2} - ".
+            format(res, fps_str, frame_info[3], settings["avs_depth"]))
+        encoder_source = ("{0} -raw {1} -o - | {2} {3}".
+            format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags))
     else:
         encoder_source = "{0} {1}".format(settings["x264_8"], input_avs)
-    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, settings["hd_opts"])
+    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
     bat = open('hd.bat', 'w')
     bat.write(cmd.replace('/','\\'))
     bat.write("{0}{0}".format(os.linesep))
     bat.close()
     split_and_blind_call('hd.bat')
     os.unlink('hd.bat')
-    return mux_hd_raw(ep_num, group)
+    return mux_hd_raw(ep_num, group, res)
 
-def mux_hd_raw(ep_num, group):
+def mux_hd_raw(ep_num, group, res):
     out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], ep_num)
 # the first track has been 0 for a while now, so let's use that instead of requiring old versions
     cmd = '"{0}" -o "out/{1}"  "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no"'.format(settings["mkvmerge"], out_name)
 # Add in tags
     if os.path.exists("{0}tags.xml".format(ep_num)):
         cmd += ' "--tags" "0:{0}tags.xml"'.format(ep_num)
-    cmd += ' "--display-dimensions" "0:1280x720" "-d" "0" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_vid.mkv" "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no" "-a" "0" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_aud.mka" "--track-order" "0:0,1:0" "--chapters" "{0}.xml"'.format(ep_num)
+    cmd += ' "--display-dimensions" "0:{1}" "-d" "0" "-A" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_vid.mkv" "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no" "-a" "0" "-D" "-S" "-T" "--no-global-tags" "--no-chapters" "{0}_aud.mka" "--track-order" "0:0,1:0" "--chapters" "{0}.xml"'.format(ep_num, res)
     cmd += mux_fonts_cmd(settings['fonts'])
     split_and_blind_call(cmd)
     return out_name
@@ -211,10 +231,14 @@ if __name__ == "__main__":
     parser.add_argument('--version', action='version', version='0.1')
     parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
     parser.add_argument('-V', '--release-version', dest="ver", help="Release version numberfor use with updated encodes, primarily SD probably.")
+    parser.add_argument('-c', '--tcfile', dest="tc", help="External timecodes file for HD/SD encodes.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
 
     settings["ver"] = Opts.ver
+
+    if Opts.tc:
+        settings["tc"] = Opts.tc
     if not Opts.prefix:
         prefix = ""
     else:

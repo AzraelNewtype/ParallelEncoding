@@ -224,7 +224,7 @@ if(options.useavs2yuv):
         proc[thread].wait()
 
 if tenbit:
-    x264_extra_params += ' --input-depth 16'
+    x264_extra_params += ' --input-depth 10'
     x264_path = x264_10_path
 else:
     x264_path = x264_8_path
