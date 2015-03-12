@@ -2,6 +2,10 @@
 
 import sys, re, os
 
+if len(sys.argv) < 4:
+    print("Usage: {0} template d2v epnum".format(sys.argv[0]))
+    sys.exit(1)
+
 d2v_pattern = re.compile(r"\[\[d2v\]\]")
 trim_pattern = re.compile("\[\[trims:(\d+)\]\]")
 
@@ -12,10 +16,6 @@ def add_trims(line):
         trims.append("Trim(0,0)")
     return "++".join(trims)
 
-
-if len(sys.argv) < 4:
-    print("Usage: {0} template d2v epnum".format(sys.argv[0]))
-    sys.exit(1)
 
 template = sys.argv[1]
 d2v = sys.argv[2]

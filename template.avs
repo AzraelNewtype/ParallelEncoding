@@ -1,6 +1,7 @@
 LoadPlugin("C:\avsfilters\tdeint.dll")
 LoadPlugin("C:\avsfilters\tmm.dll")
 LoadPlugin("C:\avsfilters\nnedi3.dll")
+LoadPlugin("C:\avsfilters\mt_masktools-26.dll")
 LoadPlugin("C:\avsfilters\dither-1.13.1\dither.dll")
 LoadPlugin("C:\avsfilters\dither-1.13.1\dfttest.dll")
 Import("C:\avsfilters\dither-1.13.1\dither.avsi")

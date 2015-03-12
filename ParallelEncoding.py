@@ -99,6 +99,14 @@ def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
 
 def write_sapikachu_source_line(avs, lossless, num, enc_depth):
     lossless_out = lossless.replace('[NUM]', str(num))
+    if tenbit:
+        hack = "true"
+    else:
+        hack = "false"
+    avs.write('tmp = FFVideoSource("{0}",enable10bithack={1},track=-1)\n'.format(lossless_out, hack))
+
+def write_source_line(avs, lossless, num, tenbit):
+    lossless_out = lossless.replace('[NUM]', str(num))
     if enc_depth == 10:
         hack = "true"
     else:
@@ -191,6 +199,7 @@ if(not os.path.exists(infile) or not os.path.isfile(infile) or ext.lower().find(
     raise SystemExit
 
 joined_template = args[1]
+
 if(not os.path.exists(joined_template) or not os.path.isfile(joined_template)):
     print('Given output template does not exist.')
     raise SystemExit

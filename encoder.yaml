@@ -8,6 +8,28 @@ Global:
     splitaud: C:/enc_tools/split_aud.pl
     chapter_template_dir: C:/enc_tools/
 Series:
+    qr:
+        default_template: sentai
+        mp4chapters: true
+        hd_hi10p: true
+        avs_depth: 16
+        wr_prefix: qr
+        hd_prefix: THISFILEHASNOSUBS
+        sd_prefix: Over-Time
+        full_name: Voltasaur Team Kyoryuger
+        hd_opts: --preset veryslow --tune film --crf 24 --keyint 240 --colormatrix bt709 --partitions p8x8,b8x8,i8x8,i4x4 --thread-input
+        wr_opts: >
+            --profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 
+            --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709
+        sd_opts: >
+            --profile main --level 3 --preset veryslow --crf 25 --keyint 240 --vbv-bufsize 8000 
+            --vbv-maxrate 8000 --partitions p8x8,b8x8,i8x8,i4x4 --tune film,fastdecode --colormatrix bt470bg 
+        fonts: 
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/kyolug/ahronbd.ttf
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/kyolug/Aller_BdIt.ttf
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/kyolug/Aller.ttf
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/kyolug/besign.ttf
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/kyolug/Salsa-Regular.ttf
     gobus:
         default_template: sentai
         mp4chapters: true
@@ -18,17 +40,41 @@ Series:
         hd_prefix: THISFILEHASNOSUBS
         sd_prefix: Over-Time
         full_name: Spec-Ops Cell Go-Busters
-        hd_opts: --preset veryslow --tune film --crf 23 --keyint 240 --colormatrix bt709
+        hd_opts: --preset veryslow --tune film --crf 23 --keyint 240 --colormatrix bt709 --partitions p8x8,b8x8,i8x8,i4x4 --thread-input
+        wr_opts: >
+            --profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 
+            --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709
+        sd_opts: >
+           
+        fonts: 
+            - C:/Users/Chris/Documents/Gokai/calibri.ttf
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/Eurosti.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/segoeui.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/ahronbd.TTF
+    wizard:
+        default_template: wizard
+        mp4chapters: true
+        hd_hi10p: true
+        avs_depth: 16
+        wr_prefix: wiz
+        hd_prefix: THISFILEHASNOSUBS
+        sd_prefix: Over-Time
+        full_name: Kamen Rider Wizard
+        hd_opts: --preset veryslow --tune film --crf 23 --keyint 240 --colormatrix bt709 --partitions p8x8,b8x8,i8x8,i4x4 --thread-input
         wr_opts: >
             --profile main --preset ultrafast --tune film,fastdecode --level 3.1 --vbv-bufsize 14000 
             --vbv-maxrate 14000 --aq-mode 2 --keyint 240 --crf 38 --colormatrix bt709
         sd_opts: >
             --profile main --level 3 --preset veryslow --crf 23 --keyint 240 --vbv-bufsize 8000 
-            --vbv-maxrate 8000 --partitions p8x8,b8x8,i4x4 --tune film,fastdecode --colormatrix bt709 
+            --vbv-maxrate 8000 --partitions p8x8,b8x8,i8x8,i4x4 --tune film,fastdecode --colormatrix bt709 
         fonts: 
-            - C:/Users/Chris/Documents/Gokai/calibri.ttf
-            - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/Eurosti.TTF
-            - C:/Users/chris/Dropbox/Over-Time/Fonts/Gobus/segoeui.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/BradhITC.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/CALIST.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/CALISTB.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/Candara.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/Kolo LP Regular.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/TREBUCBD.TTF
+            - C:/Users/chris/Dropbox/Over-Time/Fonts/wizard/TREBUCBI.TTF
     garo:
         full_name: GARO MakaiSenki
         wr_opts: >
