@@ -176,9 +176,9 @@ def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
         if not fps_str:
             fps_str = "--fps {0}".format(fps)
         source = "{0} -raw {1} -o - | {2}".format(settings['avs2yuv'], input_avs, enc)
-        input_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2} - ".
+        input_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2}".
             format(res, fps_str, frame_info[3], depth_in))
-    return {'wrapped_cmd' : "{0} {1}".format(source, input_flags), 'res' : res}
+    return {'wrapped_cmd' : "{0} {1} -".format(source, input_flags), 'res' : res}
 
 def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
