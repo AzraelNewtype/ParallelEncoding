@@ -161,7 +161,8 @@ def encode_hd(settings, ep_num, group):
         encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, enc, tenbit_flags)
     else:
         encoder_source = "{0} {1}".format(enc, input_avs)
-    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, settings["hd_opts"])
+    hd_opts= settings["hd_opts"].rstrip()
+    cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
     bat = open('hd.bat', 'w')
     bat.write(cmd.replace('/','\\'))
     bat.write("{0}{0}".format(os.linesep))
