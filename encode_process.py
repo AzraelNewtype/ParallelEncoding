@@ -252,7 +252,6 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--script', dest="script", help="Filename of ass script. Replaces [[script]] in out template.")
     parser.add_argument('-V', '--release-version', dest="ver", help="Release version number for use with updated encodes, primarily SD probably.")
     parser.add_argument('-c', '--tcfile', dest="tc", help="External timecodes file for HD/SD encodes.")
-    parser.add_argument('-c', '--tcfile', dest="tc", help="External timecodes file for HD/SD encodes.")
     args = parser.parse_args(namespace=Opts)
     settings = load_settings(Opts.series)
     Opts.hd_depth = Opts.enc_depth
