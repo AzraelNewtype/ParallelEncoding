@@ -237,15 +237,28 @@ def depth_checks(key, label, option, settings, opts):
     elif opts[key]:
         settings[key] = opts[key]
 
+def depth_checks(key, label, option, settings, depth_cli):
+    #depth_checks("hd_depth_in", "source", "-d {8,10,16}", settings)
+    if depth_cli:
+        settings[key] = depth_cli
+    if key not in settings or not settings[key]:
+        die("Your configuration file doesn't include a {0} depth, and you failed to specify one [use {1}]".format(label,option))
+
+def preprin(foo):
+    """Name inspired by precure. I don't imagine keeping this around into production,
+       but until that happens (lol) it's sometimes nice to have this?"""
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(foo)
 
 if __name__ == "__main__":
+    #Build the menu.
     parser = argparse.ArgumentParser(description="Commands to automate the crap out of encoding")
     parser.add_argument('series', help="Series name, corresponding to series top level in encoder.yaml")
     parser.add_argument('epnum', help="Episode number to process.", type=int)
     parser.add_argument('enc_type', choices=["sd", "hd", "wr", "fhd"], help="Which set of encoder commands to run?")
     parser.add_argument('-t', '--template', dest='temp_name', help="Name of chapter template file with no .txt")
     parser.add_argument('-p', '--prefix', dest='prefix', help="Prefix to attach to output filename. Group tag goes here for HD/SD")
-    #parser.add_argument('-d', '--tenbit', dest='tenbit', action='store_true', default=False, help="Use 10bit encoder.")
     parser.add_argument('-d', '--source-depth', dest='source_depth', type=int, choices=[8,10,16], help="Bitdepth of avs.")
     parser.add_argument('-D', '--encode-depth', dest='enc_depth', type=int, choices=[8,10], help="Use standard x264 or x264-10bit?")
     parser.add_argument('--version', action='version', version='0.1')
@@ -253,10 +266,9 @@ if __name__ == "__main__":
     parser.add_argument('-V', '--release-version', dest="ver", help="Release version number for use with updated encodes, primarily SD probably.")
     parser.add_argument('-c', '--tcfile', dest="tc", help="External timecodes file for HD/SD encodes.")
     args = parser.parse_args(namespace=Opts)
+
+    #Grab the settings from the yaml based on input
     settings = load_settings(Opts.series)
-    Opts.hd_depth = Opts.enc_depth
-    Opts.sd_depth = Opts.enc_depth
-    dOpts = vars(Opts)
 
     settings["ver"] = Opts.ver
 
@@ -278,7 +290,6 @@ if __name__ == "__main__":
         settings["script"] = ""
     else:
         settings["script"] = Opts.script
-    depth_checks("source_depth", "source", "-d {8,10,16}", settings, dOpts)
     if Opts.enc_type == "wr":
         if settings["default_template"] and not temp_name:
             temp_name = settings["default_template"]
@@ -286,12 +297,14 @@ if __name__ == "__main__":
             prefix = settings["wr_prefix"]
         encode_wr(settings, epnum, prefix, temp_name)
     elif Opts.enc_type == "hd":
-        depth_checks("hd_depth", "HD", "-D {8,10}", settings, dOpts)
+        depth_checks("hd_depth_in", "HD source", "-d {8,10,16}", settings, Opts.source_depth)
+        depth_checks("hd_depth_out", "HD encode", "-D {8,10}", settings, Opts.enc_depth)
         if not Opts.prefix and settings["hd_prefix"]:
             prefix = settings["hd_prefix"]
         encode_hd(settings, epnum, prefix)
     elif Opts.enc_type == "sd":
-        depth_checks("sd_depth", "SD", "-D {8,10}", settings, dOpts)
+        depth_checks("sd_depth_in", "SD source", "-d {8,10,16}", settings, Opts.source_depth)
+        depth_checks("sd_depth_out", "SD encode", "-D {8,10}", settings, Opts.enc_depth)
         if not Opts.prefix and settings["sd_prefix"]:
             prefix = settings["sd_prefix"]
         encode_sd(settings, epnum, prefix)
