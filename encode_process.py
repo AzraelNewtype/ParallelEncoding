@@ -119,7 +119,7 @@ def encode_wr(settings, ep_num, prefix, temp_name):
     cmd = ("{0} {3} --qpfile {1}.qpfile --acodec copy --audiofile "
           "{1}_aud.mka -o {2}{1}wr.mkv {1}/{1}.WR.avs {4} --chapter "
           "{1}.xml".
-          format(settings["x264_8"], ep_num, prefix, settings["wr_opts"], 
+          format(settings["x264_8"], ep_num, prefix, settings["wr_opts"],
                  tc_str))
     split_and_blind_call(cmd)
 
@@ -162,30 +162,42 @@ def encode_sd(settings, ep_num, group):
         ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str)
     split_and_blind_call(cmd)
 
+def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
+    frame_info = get_vid_info(settings, ep_num, enc_type)
+    fps = eval(frame_info[2])
+    width = int(frame_info[0])//2
+    res = "{0}x{1}".format(width, frame_info[1])
+    if settings["avs2yuv_has_depth"]:
+        source = "{0} -depth {2} {1} -o - | {3}".format(settings['avs2yuv'], input_avs, depth_in, enc)
+        input_flags = "--stdin y4m --frames {0}".format(frame_info[3])
+        if fps_str:
+            input_flags = " ".join([input_flags, fps_str])
+    else:
+        if not fps_str:
+            fps_str = "--fps {0}".format(fps)
+        source = "{0} -raw {1} -o - | {2}".format(settings['avs2yuv'], input_avs, enc)
+        input_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2} - ".
+            format(res, fps_str, frame_info[3], depth_in))
+    return {'wrapped_cmd' : "{0} {1}".format(source, input_flags), 'res' : res}
+
 def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
-    if settings['hd_depth'] == 10:
+    if settings['hd_depth_out'] == 10:
         enc = settings["x264_10"]
     else:
         enc = settings["x264_8"]
-    if settings['source_depth'] > 9:
-        frame_info = get_vid_info(settings, ep_num, "HD")
-        tenbit_flags = "--demuxer raw --input-depth {4} --input-res {0}x{1} --fps {2} --frames {3} - ".format(
-            int(frame_info[0])//2, frame_info[1], eval(frame_info[2]), frame_info[3], settings['source_depth'])
-        encoder_source = "{0} -raw {1} -o - | {2} {3}".format(settings["avs2yuv"], input_avs, enc, tenbit_flags)
+    if settings['hd_depth_in'] > 8 or settings['pipe_8']:
         try:
             fps_str = "--tcfile-in {0}".format(settings["tc"])
         except KeyError:
-            fps_str = "--fps {0}".format(fps)
-        res = "{0}x{1}".format(width, frame_info[1])
-        tenbit_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2} - ".
-            format(res, fps_str, frame_info[3], settings["avs_depth"]))
-        encoder_source = ("{0} -raw {1} -o - | {2} {3}".
-            format(settings["avs2yuv"], input_avs, settings["x264_10"], tenbit_flags))
+            fps_str = None
+        wrapped = avs2yuv_wrap(settings, ep_num, "HD", enc, input_avs, fps_str, settings['hd_depth_in'])
+        encoder_source = wrapped['wrapped_cmd']
+        res = wrapped['res']
     else:
         encoder_source = "{0} {1}".format(enc, input_avs)
-    hd_opts= settings["hd_opts"].rstrip()
+    hd_opts = settings["hd_opts"].rstrip()
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
     bat = open('hd.bat', 'w')
     bat.write(cmd.replace('/','\\'))

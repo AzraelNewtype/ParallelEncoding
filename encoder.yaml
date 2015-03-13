@@ -1,7 +1,9 @@
 Global:
     avs2yuv: C:/enc_tools/avs2yuv.exe
+    avs2yuv_has_depth: true
     x264_8: C:/enc_tools/x264_32_tMod+TriAQ-8bit-all.exe
     x264_10: C:/enc_tools/x264_rev2431_tMod/Lite/x264_64_tMod-10bit-420.exe
+    pipe_8: false
     x264_extra_params: --preset veryfast --subme 1
     mkvmerge: C:/Program Files (x86)/MKVtoolnix/mkvmerge.exe
     vfrpy:  C:/enc_tools/vfr/vfr.py
