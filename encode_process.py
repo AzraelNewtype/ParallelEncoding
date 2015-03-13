@@ -229,16 +229,7 @@ def die(msg="The programmer neglected to explain why he's crashing the program h
     print(msg)
     raise SystemExit
 
-def depth_checks(key, label, option, settings, opts):
-    if key not in settings:
-        settings[key] = None
-    if not opts[key] and not settings[key]:
-        die("Your configuration file doesn't include a {0} depth, and you failed to specify one [use {1}]".format(label,option))
-    elif opts[key]:
-        settings[key] = opts[key]
-
 def depth_checks(key, label, option, settings, depth_cli):
-    #depth_checks("hd_depth_in", "source", "-d {8,10,16}", settings)
     if depth_cli:
         settings[key] = depth_cli
     if key not in settings or not settings[key]:
