@@ -83,10 +83,7 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, enc_depth)
 
 def write_lossless_lines(joined_avs, lossless, total_threads, enc_depth):
     for thread in range(1, total_threads + 1):
-        # Using the new one here because I haven't gotten this function to care about config yet
         write_sapikachu_source_line(joined_avs, lossless, thread, enc_depth)
-        # Old version for TheFluff's initial hacked ffms2
-        #write_source_line(joined_avs, lossless, thread, enc_depth)
         if (thread == 1):
             joined_avs.write('total1 = tmp.Trim(0,tmp.FrameCount() - 51)\n')
         elif (thread == total_threads):
