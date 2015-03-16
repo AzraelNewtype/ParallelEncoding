@@ -165,7 +165,10 @@ def encode_sd(settings, ep_num, group):
 def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
     frame_info = get_vid_info(settings, ep_num, enc_type)
     fps = eval(frame_info[2])
-    width = int(frame_info[0])//2
+    if depth_in > 8:
+        width = int(frame_info[0])//2
+    else:
+        width = int(frame_info[0])
     res = "{0}x{1}".format(width, frame_info[1])
     if settings["avs2yuv_has_depth"]:
         source = "{0} -depth {2} {1} -o - | {3}".format(settings['avs2yuv'], input_avs, depth_in, enc)
