@@ -214,7 +214,7 @@ def encode_hd(settings, ep_num, group):
         encoder_source = "{0} {1}".format(enc, input_avs)
     hd_opts = settings["hd_opts"].rstrip()
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
-    split_and_blind_call(cmd, False, True)
+    split_and_blind_call(cmd.replace('/','\\\\'), False, True)
     #bat_exec(cmd)
     return mux_hd_raw(ep_num, group, res)
 
