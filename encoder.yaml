@@ -25,7 +25,7 @@ Series:
         full_name: Shuriken Sentai Ninninger
         hd_opts: >
             --preset veryslow --tune film --crf 23.0 --keyint 240 --colormatrix bt709 
-            --partitions p8x8,b8x8,i8x8,i4x4 --thread-input --ref 10
+            --partitions p8x8,b8x8,i8x8,i4x4 --thread-input --ref 10 --open-gop
         wr_opts: >
             --profile main --preset ultrafast --tune film,fastdecode --level 3.1 
             --vbv-bufsize 8000 --vbv-maxrate 8000 --keyint 240 
