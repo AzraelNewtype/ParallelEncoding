@@ -72,15 +72,6 @@ def get_audiofile_name(ep_num):
                 if len(aacs) > 0:
                     return aacs[0]
 
-# Why was this even implemented?
-def get_stats_name(ep_num):
-    basename = "{0}.WR.avs".format(ep_num)
-    with open(basename) as f:
-        for line in f:
-            m = re.search(r"scxvid\(\"(.+)\"\)",line)
-            if m:
-                print(m.group(1))
-
 def cut_audio(settings, ep_num):
     aud_in = get_audiofile_name(ep_num)
     if settings["vfrpy"]:
