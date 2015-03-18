@@ -183,18 +183,6 @@ def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
             format(res, fps_str, frame_info[3], depth_in))
     return {'wrapped_cmd' : "{0} {1} -".format(source, input_flags), 'res' : res}
 
-def bat_exec(cmd):
-    """This gross as hell shit writes your command to a bat file and runs that
-       instead of just running the command, because sometimes pipes are weird
-       and the less gross method of dealing with them (communicate) is really
-       ill-advised (huge fucking input that you don't want it to buffer)"""
-    bat = open('foo.bat', 'w')
-    bat.write(cmd.replace('/','\\'))
-    bat.write('\n\n')
-    bat.close()
-    split_and_blind_call('foo.bat')
-    os.unlink('foo.bat')
-
 def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
     input_avs = "{0}/{0}.HD.avs".format(ep_num)
@@ -214,8 +202,7 @@ def encode_hd(settings, ep_num, group):
         encoder_source = "{0} {1}".format(enc, input_avs)
     hd_opts = settings["hd_opts"].rstrip()
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
-    split_and_blind_call(cmd.replace('/','\\\\'), False, True)
-    #bat_exec(cmd)
+    split_and_blind_call(cmd, False, True)
     return mux_hd_raw(ep_num, group, res)
 
 def mux_hd_raw(ep_num, group, res):
@@ -240,6 +227,8 @@ def mux_fonts_cmd(fonts):
 
 
 def split_and_blind_call(cmd, is_python=False, is_shell=False):
+    if is_shell:
+        cmd = cmd.replace('/','\\\\')
     args = shlex.split(cmd)
     print(' '.join(args))
     if is_python:
