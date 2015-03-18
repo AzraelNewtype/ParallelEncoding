@@ -15,8 +15,10 @@ except ImportError:
     print("You need to install PyYaml for this to work.")
     raise SystemExit
 
+
 class Opts(object):
     pass
+
 
 def load_settings(series):
     try:
@@ -38,6 +40,7 @@ def load_settings(series):
         raise SystemExit
 
     return settings
+
 
 def prepare_mode_avs(ep_num, mode, script):
     basename = "{0}/{0}.joined.avs".format(ep_num)
@@ -62,6 +65,7 @@ def prepare_mode_avs(ep_num, mode, script):
                     line = 'TextSub("{0}")'.format(script_loc)
                 f.write("{0}{1}".format(line, os.linesep))
 
+
 def get_audiofile_name(ep_num):
     basename = "{0}.avs".format(ep_num)
     with open(basename) as f:
@@ -71,6 +75,7 @@ def get_audiofile_name(ep_num):
                 aacs = glob.glob("{0}*.aac".format(os.path.splitext(m.group(1))[0]))
                 if len(aacs) > 0:
                     return aacs[0]
+
 
 def cut_audio(settings, ep_num):
     aud_in = get_audiofile_name(ep_num)
@@ -95,6 +100,7 @@ def make_chapters(settings, ep_num, temp_name, mp4):
     cmd +=" {0}.avs".format(ep_num)
     split_and_blind_call(cmd, True)
 
+
 def encode_wr(settings, ep_num, prefix, temp_name):
     cut_audio(settings, ep_num)
     print(temp_name)
@@ -113,6 +119,7 @@ def encode_wr(settings, ep_num, prefix, temp_name):
           format(settings["x264_8"], ep_num, prefix, settings["wr_opts"],
                  tc_str))
     split_and_blind_call(cmd)
+
 
 def get_vid_info(settings, ep_num, mode):
     info = [0, 0, 0, 0]
@@ -134,6 +141,7 @@ def get_vid_info(settings, ep_num, mode):
     os.unlink(tempYUV)
     die('Error: Could not count number of frames.')
 
+
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD", settings["script"])
     if settings["ver"]:
@@ -152,6 +160,7 @@ def encode_sd(settings, ep_num, group):
     cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {4}{5} {0}/{0}.SD.avs'.format(
         ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str)
     split_and_blind_call(cmd)
+
 
 def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
     frame_info = get_vid_info(settings, ep_num, enc_type)
@@ -173,6 +182,7 @@ def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
         input_flags = ("--demuxer raw --input-depth {3} --input-res {0} {1} --frames {2}".
             format(res, fps_str, frame_info[3], depth_in))
     return {'wrapped_cmd' : "{0} {1} -".format(source, input_flags), 'res' : res}
+
 
 def encode_hd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "HD", "")
@@ -196,6 +206,7 @@ def encode_hd(settings, ep_num, group):
     split_and_blind_call(cmd, False, True)
     return mux_hd_raw(ep_num, group, res)
 
+
 def mux_hd_raw(ep_num, group, res):
     out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], ep_num)
 # the first track has been 0 for a while now, so let's use that instead of requiring old versions
@@ -207,6 +218,7 @@ def mux_hd_raw(ep_num, group, res):
     cmd += mux_fonts_cmd(settings['fonts'])
     split_and_blind_call(cmd)
     return out_name
+
 
 def mux_fonts_cmd(fonts):
     font_switches = ""
@@ -232,11 +244,13 @@ def die(msg="The programmer neglected to explain why he's crashing the program h
     print(msg)
     raise SystemExit
 
+
 def depth_checks(key, label, option, settings, depth_cli):
     if depth_cli:
         settings[key] = depth_cli
     if key not in settings or not settings[key]:
         die("Your configuration file doesn't include a {0} depth, and you failed to specify one [use {1}]".format(label,option))
+
 
 def preprin(foo):
     """Name inspired by precure. I don't imagine keeping this around into production,
@@ -244,6 +258,7 @@ def preprin(foo):
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(foo)
+
 
 if __name__ == "__main__":
     #Build the menu.
