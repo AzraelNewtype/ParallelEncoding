@@ -153,12 +153,19 @@ def encode_sd(settings, ep_num, group):
         chaps = "--chapter {0}ch.txt".format(ep_num)
     else:
         chaps = ""
+
+    if os.path.exists("{0}.qpfile".format(ep_num)):
+        qp_str = "--qpfile {0}.qpfile".format(ep_num)
+    else:
+        qp_str = ""
+
     try:
         tc_str = " --tcfile-in {0}".format(settings["tc"])
     except KeyError:
         tc_str = ""
-    cmd = '"{2}" {3} --qpfile {0}.qpfile --acodec copy --audiofile {0}_aud.mka -o "{1}" {4}{5} {0}/{0}.SD.avs'.format(
-        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str)
+
+    cmd = '"{2}" {3} {6} --acodec copy --audiofile {0}_aud.mka -o "{1}" {4}{5} {0}/{0}.SD.avs'.format(
+        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str, qp_str)
     split_and_blind_call(cmd)
 
 
@@ -191,16 +198,22 @@ def encode_hd(settings, ep_num, group):
         enc = settings["x264_10"]
     else:
         enc = settings["x264_8"]
+
     if settings['hd_depth_in'] > 8 or settings['pipe_8']:
         try:
             fps_str = "--tcfile-in {0}".format(settings["tc"])
         except KeyError:
             fps_str = None
-        wrapped = avs2yuv_wrap(settings, ep_num, "HD", enc, input_avs, fps_str, settings['hd_depth_in'])
+        wrapped = avs2yuv_wrap(settings, ep_num, "HD", enc, input_avs, fps_str,
+                               settings['hd_depth_in'])
         encoder_source = wrapped['wrapped_cmd']
         res = wrapped['res']
     else:
+        frame_info = get_vid_info(settings, ep_num, 'HD')
+        # We can't get to this state unless it's 8-bit input, reply is gospel
+        res = "{0}x{1}".format(frame_info[0], frame_info[1])
         encoder_source = "{0} {1}".format(enc, input_avs)
+
     hd_opts = settings["hd_opts"].rstrip()
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
     split_and_blind_call(cmd, False, True)
