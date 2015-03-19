@@ -140,12 +140,27 @@ def get_vid_info(settings, ep_num, mode):
 
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD", settings["script"])
+
+    input_avs = '{0}/{0}.SD.avs'.format(ep_num)
+    if settings['sd_depth_out'] == 10:
+        enc = settings["x264_10"]
+    else:
+        enc = settings["x264_8"]
+
     if settings["ver"]:
         name_ep_num = "{0}v{1}".format(ep_num, settings["ver"])
     else:
         name_ep_num = ep_num
-    out_name = "out/[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], name_ep_num)
-    if os.path.exists("{0}ch.txt".format(ep_num)):
+
+
+    if settings['external_mp4_muxer']:
+        audio_str = ''
+        out_name = '{0}sd.mp4'.format(ep_num)
+    else:
+        audio_str = "--acodec copy --audiofile {0}_aud.mka".format(ep_num)
+        out_name = "out/[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], name_ep_num)
+
+    if os.path.exists("{0}ch.txt".format(ep_num)) and not settings['external_mp4_muxer']:
         chaps = "--chapter {0}ch.txt".format(ep_num)
     else:
         chaps = ""
@@ -156,17 +171,27 @@ def encode_sd(settings, ep_num, group):
         qp_str = ""
 
     try:
-        tc_str = " --tcfile-in {0}".format(settings["tc"])
+        fps_str = " --tcfile-in {0}".format(settings["tc"])
     except KeyError:
-        tc_str = ""
+        fps_str = ""
 
-    cmd = '"{2}" {3} {6} --acodec copy --audiofile {0}_aud.mka -o "{1}" {4}{5} {0}/{0}.SD.avs'.format(
-        ep_num, out_name, settings["x264_8"], settings["sd_opts"], chaps, tc_str, qp_str)
+    if settings['sd_depth_in'] > 8 or settings['pipe_8']:
+        wrapped = avs2yuv_wrap(settings, ep_num, 'SD', enc, input_avs, fps_str,
+                     settings['sd_depth_in'])
+        encoder_source = wrapped['wrapped_cmd']
+    else:
+        encoder_source = '{0} {1}{2}'.format(enc, input_avs, fps_str)
+
+    cmd = '{0} {2} {4} {5} {3} -o "{1}"'.format(encoder_source, out_name,
+                                                settings["sd_opts"].strip(),
+                                                chaps, qp_str, audio_str)
+    #die(cmd)
     split_and_blind_call(cmd)
 
 
 def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
     frame_info = get_vid_info(settings, ep_num, enc_type)
+    #frame_info = [854, 480, '24000/1001', 9000]
     fps = eval(frame_info[2])
     if depth_in > 8:
         width = int(frame_info[0])//2
