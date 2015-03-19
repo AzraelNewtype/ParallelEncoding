@@ -12,8 +12,7 @@ import tempfile
 try:
     import yaml
 except ImportError:
-    print("You need to install PyYaml for this to work.")
-    raise SystemExit
+    die("You need to install PyYaml for this to work.")
 
 
 class Opts(object):
@@ -27,8 +26,7 @@ def load_settings(series):
         with open(yaml_loc) as y:
             all_settings = yaml.load(y)
     except IOError:
-        print("Cannot load encoder.yaml, cannot continue.")
-        raise SystemExit
+        die("Cannot load encoder.yaml, cannot continue.")
 
     settings = all_settings['Global']
     try:
@@ -60,8 +58,6 @@ def prepare_mode_avs(ep_num, mode, script):
             if line:
                 if not script == "" and re.search(r'\[\[script\]\]', line):
                     script_loc = os.path.abspath(script)
-                    print(line)
-                    print(script_loc)
                     line = 'TextSub("{0}")'.format(script_loc)
                 f.write("{0}{1}".format(line, os.linesep))
 
@@ -84,8 +80,7 @@ def cut_audio(settings, ep_num):
     elif settings["splitaud"]:
         cmd = settings["splitaud"]
     else:
-        print("You don't have an audio cutter path defined in encoder.yaml, give the path to vfr.py or split_aud.pl")
-        raise SystemExit
+        die("You don't have an audio cutter path defined in encoder.yaml, give the path to vfr.py or split_aud.pl")
     cmd += ' -mr -i "{0}" -o {1}_aud.mka'.format(aud_in, ep_num)
     cmd +=" {0}.avs".format(ep_num)
     split_and_blind_call(cmd, True)
@@ -103,7 +98,7 @@ def make_chapters(settings, ep_num, temp_name, mp4):
 
 def encode_wr(settings, ep_num, prefix, temp_name):
     cut_audio(settings, ep_num)
-    print(temp_name)
+    #print(temp_name)
     if temp_name:
         make_chapters(settings, ep_num, temp_name, False)
         if settings["mp4chapters"]:
@@ -129,8 +124,9 @@ def get_vid_info(settings, ep_num, mode):
     frames_cmd = '"{0}"'.format(os.path.normpath(settings["avs2yuv"]))
     frames_cmd += ' -raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
 
-    print(frames_cmd)
-    proc = subprocess.Popen(frames_cmd,shell=True,stdout=subprocess.PIPE,universal_newlines=True,stderr=subprocess.STDOUT)
+    #print(frames_cmd)
+    proc = subprocess.Popen(frames_cmd, shell=True, stdout=subprocess.PIPE,
+                            universal_newlines=True, stderr=subprocess.STDOUT)
     proc.wait()
     p = re.compile ('.+: ([0-9]+)x([0-9]+), ([0-9]+/[0-9]+) fps, ([0-9]+) frames')
     for line in proc.stdout:
@@ -246,7 +242,7 @@ def split_and_blind_call(cmd, is_python=False, is_shell=False):
     if is_shell:
         cmd = cmd.replace('/','\\\\')
     args = shlex.split(cmd)
-    print(' '.join(args))
+    #print(' '.join(args))
     if is_python:
         args.insert(0, sys.executable)
     f = subprocess.Popen(args, shell=is_shell)
