@@ -179,14 +179,16 @@ def encode_sd(settings, ep_num, group):
         wrapped = avs2yuv_wrap(settings, ep_num, 'SD', enc, input_avs, fps_str,
                      settings['sd_depth_in'])
         encoder_source = wrapped['wrapped_cmd']
+        shell = True
     else:
         encoder_source = '{0} {1}{2}'.format(enc, input_avs, fps_str)
+        shell = False
 
     cmd = '{0} {2} {4} {5} {3} -o "{1}"'.format(encoder_source, out_name,
                                                 settings["sd_opts"].strip(),
                                                 chaps, qp_str, audio_str)
     #die(cmd)
-    split_and_blind_call(cmd)
+    split_and_blind_call(cmd, False, shell)
 
 
 def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
@@ -220,6 +222,7 @@ def encode_hd(settings, ep_num, group):
     else:
         enc = settings["x264_8"]
 
+    shell = False
     if settings['hd_depth_in'] > 8 or settings['pipe_8']:
         try:
             fps_str = "--tcfile-in {0}".format(settings["tc"])
@@ -229,6 +232,7 @@ def encode_hd(settings, ep_num, group):
                                settings['hd_depth_in'])
         encoder_source = wrapped['wrapped_cmd']
         res = wrapped['res']
+        shell = True
     else:
         frame_info = get_vid_info(settings, ep_num, 'HD')
         # We can't get to this state unless it's 8-bit input, reply is gospel
@@ -237,7 +241,7 @@ def encode_hd(settings, ep_num, group):
 
     hd_opts = settings["hd_opts"].rstrip()
     cmd = "{0} {2} --qpfile {1}.qpfile -o {1}_vid.mkv".format(encoder_source, ep_num, hd_opts)
-    split_and_blind_call(cmd, False, True)
+    split_and_blind_call(cmd, False, shell)
     return mux_hd_raw(ep_num, group, res)
 
 
