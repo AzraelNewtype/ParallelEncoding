@@ -48,7 +48,7 @@ def prepare_mode_avs(ep_num, mode, script):
     outname = basename.replace("joined", mode)
     with open(outname, "w") as f:
         for raw_line in lines:
-            line = raw_line.rstrip()
+            line = raw_line.rstrip(os.linesep)
             if re.match("#", line):
                 m = re.search("#(.+)#(.+)", line)
                 if m and re.search("\[{0}\]".format(mode), m.group(2)):
@@ -59,7 +59,7 @@ def prepare_mode_avs(ep_num, mode, script):
                 if not script == "" and re.search(r'\[\[script\]\]', line):
                     script_loc = os.path.abspath(script)
                     line = 'TextSub("{0}")'.format(script_loc)
-                f.write("{0}{1}".format(line, os.linesep))
+                f.write("{0}\n".format(line)
 
 
 def get_audiofile_name(ep_num):
@@ -246,7 +246,11 @@ def encode_hd(settings, ep_num, group):
 
 
 def mux_hd_raw(ep_num, group, res):
-    out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], ep_num)
+    if settings["ver"]:
+	    out_ep_num = "{0}v{1}".format(ep_num, settings["ver"])
+    else:
+	    out_ep_num = ep_num
+    out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], out_ep_num)
 # the first track has been 0 for a while now, so let's use that instead of requiring old versions
     cmd = '"{0}" -o "out/{1}"  "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no"'.format(settings["mkvmerge"], out_name)
 # Add in tags
