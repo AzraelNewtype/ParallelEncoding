@@ -83,8 +83,10 @@ def generate_joined_avs(output_avs, lossless, avs_mem, total_threads, tenbit):
 
 def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
     for thread in range(1, total_threads + 1):
+        # Really need to make this shit less fragile so I don't need to do this again
+        write_lsmash_source_line(joined_avs, lossless, thread, tenbit)
         # Using the new one here because I haven't gotten this function to care about config yet
-        write_sapikachu_source_line(joined_avs, lossless, thread, tenbit)
+        #write_sapikachu_source_line(joined_avs, lossless, thread, tenbit)
         # Old version for TheFluff's initial hacked ffms2
         #write_source_line(joined_avs, lossless, thread, tenbit)
         if (thread == 1):
@@ -96,6 +98,16 @@ def write_lossless_lines(joined_avs, lossless, total_threads, tenbit):
             joined_avs.write('total1 = total1 + tmp.Trim(51,tmp.FrameCount() - 51)\n')
     joined_avs.write('total1\n')
 
+def write_lsmash_source_line(avs, lossless, num, tenbit):
+    lossless_out = lossless.replace('[NUM]', str(num))
+    if tenbit:
+        stacked = "true"
+        colorspace = "YUV420P16"
+    else:
+        stacked = "false"
+        colorspace = "YUV420P8"
+    avs.write('tmp = LWLibavVideoSource("{0}", stacked={1}, format="{2}")'.
+               format(lossless_out, stacked, colorspace))
 
 def write_sapikachu_source_line(avs, lossless, num, tenbit):
     lossless_out = lossless.replace('[NUM]', str(num))
