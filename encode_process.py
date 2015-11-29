@@ -9,6 +9,10 @@ import subprocess
 import sys
 import tempfile
 
+def die(msg="The programmer neglected to explain why he's crashing the program here."):
+    print(msg)
+    raise SystemExit
+
 try:
     import yaml
 except ImportError:
@@ -59,14 +63,14 @@ def prepare_mode_avs(ep_num, mode, script):
                 if not script == "" and re.search(r'\[\[script\]\]', line):
                     script_loc = os.path.abspath(script)
                     line = 'TextSub("{0}")'.format(script_loc)
-                f.write("{0}\n".format(line)
+                f.write("{0}\n".format(line))
 
 
 def get_audiofile_name(ep_num):
     basename = "{0}.avs".format(ep_num)
     with open(basename) as f:
         for line in f:
-            m = re.search(r"source\(\"(.+)?\"(,.+)*?\)", line)
+            m = re.search(r"ource\(\"(.+)?\"(,.+)*?\)", line)
             if m:
                 aacs = glob.glob("{0}*.aac".format(os.path.splitext(m.group(1))[0]))
                 if len(aacs) > 0:
@@ -280,12 +284,6 @@ def split_and_blind_call(cmd, is_python=False, is_shell=False):
         args.insert(0, sys.executable)
     f = subprocess.Popen(args, shell=is_shell)
     f.wait()
-
-
-def die(msg="The programmer neglected to explain why he's crashing the program here."):
-    print(msg)
-    raise SystemExit
-
 
 def depth_checks(key, label, option, settings, depth_cli):
     if depth_cli:
