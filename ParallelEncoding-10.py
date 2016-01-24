@@ -102,11 +102,11 @@ def write_lsmash_source_line(avs, lossless, num, tenbit):
     lossless_out = lossless.replace('[NUM]', str(num))
     if tenbit:
         stacked = "true"
-        colorspace = "YUV420P16"
+        colorspace = "YUV420P10"
     else:
         stacked = "false"
         colorspace = "YUV420P8"
-    avs.write('tmp = LWLibavVideoSource("{0}", stacked={1}, format="{2}")'.
+    avs.write('tmp = LWLibavVideoSource("{0}", stacked={1}, format="{2}")\n'.
                format(lossless_out, stacked, colorspace))
 
 def write_sapikachu_source_line(avs, lossless, num, tenbit):
