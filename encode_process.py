@@ -102,7 +102,6 @@ def make_chapters(settings, ep_num, temp_name, mp4):
 
 def encode_wr(settings, ep_num, prefix, temp_name):
     cut_audio(settings, ep_num)
-    #print(temp_name)
     if temp_name:
         make_chapters(settings, ep_num, temp_name, False)
         if settings["mp4chapters"]:
@@ -128,7 +127,6 @@ def get_vid_info(settings, ep_num, mode):
     frames_cmd = '"{0}"'.format(os.path.normpath(settings["avs2yuv"]))
     frames_cmd += ' -raw -frames 1 "{1}" -o "{0}"'.format(tempYUV, avs_name)
 
-    #print(frames_cmd)
     proc = subprocess.Popen(frames_cmd, shell=True, stdout=subprocess.PIPE,
                             universal_newlines=True, stderr=subprocess.STDOUT)
     proc.wait()
@@ -191,7 +189,6 @@ def encode_sd(settings, ep_num, group):
     cmd = '{0} {2} {4} {5} {3} -o "{1}"'.format(encoder_source, out_name,
                                                 settings["sd_opts"].strip(),
                                                 chaps, qp_str, audio_str)
-    #die(cmd)
     split_and_blind_call(cmd, False, shell)
 
 
@@ -251,9 +248,9 @@ def encode_hd(settings, ep_num, group):
 
 def mux_hd_raw(ep_num, group, res):
     if settings["ver"]:
-	    out_ep_num = "{0}v{1}".format(ep_num, settings["ver"])
+        out_ep_num = "{0}v{1}".format(ep_num, settings["ver"])
     else:
-	    out_ep_num = ep_num
+        out_ep_num = ep_num
     out_name = "[{0}] {1} - {2}.mkv".format(group, settings["full_name"], out_ep_num)
 # the first track has been 0 for a while now, so let's use that instead of requiring old versions
     cmd = '"{0}" -o "out/{1}"  "--language" "0:jpn" "--default-track" "0:yes" "--forced-track" "0:no"'.format(settings["mkvmerge"], out_name)
