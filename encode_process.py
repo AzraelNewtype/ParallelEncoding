@@ -139,6 +139,24 @@ def get_vid_info(settings, ep_num, mode):
     os.unlink(tempYUV)
     die('Error: Could not count number of frames.')
 
+def mux_mp4(lsmash, ep_num, muxed_name):
+    # Repeating this code makes me itchy. Really need to test if I can just mux at encode time
+    # and let the final mux work
+    if os.path.exists("{0}ch.txt".format(ep_num)):
+        chaps = " --chapter {0}ch.txt".format(ep_num)
+    else:
+        chaps = ""
+
+    cmd = ('{0}/remuxer.exe -i {1}sd.mp4?language=eng -i {1}_a.mp4?language=jpn{3}'
+          ' -o "{2}"'.format(lsmash, ep_num, muxed_name, chaps))
+    print(cmd)
+
+def repackage_audio(settings, ep_num):
+    cmd = "{1} tracks {0}_aud.mka 0:{0}.aac".format(ep_num, settings['mkvextract'])
+    print(cmd)
+    cmd = "{0}/muxer.exe -i {1}.aac?1:language=jpn -o {1}_a.mp4".format(settings['l-smash_bin_path'],
+                                                                      ep_num)
+    print(cmd)
 
 def encode_sd(settings, ep_num, group):
     prepare_mode_avs(ep_num, "SD", settings["script"])
@@ -155,13 +173,17 @@ def encode_sd(settings, ep_num, group):
         name_ep_num = ep_num
 
 
+    muxed_name = "out/[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], name_ep_num)
+    # Handle the audio, either as part of the encode string or separately
     if settings['external_mp4_muxer']:
         audio_str = ''
+        repackage_audio(settings, ep_num)
         out_name = '{0}sd.mp4'.format(ep_num)
     else:
         audio_str = "--acodec copy --audiofile {0}_aud.mka".format(ep_num)
-        out_name = "out/[{0}] {1} - {2}SD.mp4".format(group, settings["full_name"], name_ep_num)
+        out_name = muxed_name
 
+    # Not sure if it's necessary to abstain from chapter muxing at encode time. Test later.
     if os.path.exists("{0}ch.txt".format(ep_num)) and not settings['external_mp4_muxer']:
         chaps = "--chapter {0}ch.txt".format(ep_num)
     else:
@@ -189,12 +211,18 @@ def encode_sd(settings, ep_num, group):
     cmd = '{0} {2} {4} {5} {3} -o "{1}"'.format(encoder_source, out_name,
                                                 settings["sd_opts"].strip(),
                                                 chaps, qp_str, audio_str)
-    split_and_blind_call(cmd, False, shell)
+    #split_and_blind_call(cmd, False, shell)
+    print(cmd)
+
+    if settings['external_mp4_muxer']:
+        mux_mp4(settings['l-smash_bin_path'], ep_num, muxed_name)
+
+    die("This is where it would have stopped.")
 
 
 def avs2yuv_wrap(settings, ep_num, enc_type, enc, input_avs, fps_str, depth_in):
-    frame_info = get_vid_info(settings, ep_num, enc_type)
-    #frame_info = [854, 480, '24000/1001', 9000]
+    #frame_info = get_vid_info(settings, ep_num, enc_type)
+    frame_info = [854, 480, '24000/1001', 9000]
     fps = eval(frame_info[2])
     if depth_in > 8:
         width = int(frame_info[0])//2
